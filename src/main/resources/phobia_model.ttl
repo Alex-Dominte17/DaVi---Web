@@ -70,6 +70,8 @@ phoa:DataSource a owl:Class ;
 phoa:Device a owl:Class ;
   rdfs:label "Device"@en .
 
+
+
 ### OBJECT PROPERTIES ###
 phoa:hasPhobia a owl:ObjectProperty ;
   rdfs:domain phoa:User ;
@@ -164,6 +166,9 @@ phoa:hasObservation a owl:ObjectProperty ;
   rdfs:range sosa:Observation ;
   rdfs:label "has observation"@en .
 
+
+
+
 ### DATA PROPERTIES ###
 # (1) Severity is per-user (on PhobiaAffliction), not on the general Phobia concept.
 phoa:severity a owl:DatatypeProperty ;
@@ -186,6 +191,17 @@ phoa:afflictionEnd a owl:DatatypeProperty ;
   rdfs:domain phoa:PhobiaAffliction ;
   rdfs:range xsd:dateTime ;
   rdfs:label "affliction end"@en .
+
+phoa:status a owl:DatatypeProperty ;
+  rdfs:domain phoa:Notification ;
+  rdfs:range xsd:string ;
+  rdfs:label "status"@en .
+
+phoa:ackTime a owl:DatatypeProperty ;
+  rdfs:domain phoa:Notification ;
+  rdfs:range xsd:dateTime ;
+  rdfs:label "ack time"@en .
+
 
 ### MAPPING PROPERTY (for KB links) ###
 phoa:exactMatch a owl:AnnotationProperty ;
@@ -218,7 +234,11 @@ phoa:Claustrophobia a phoa:Phobia ;
   phoa:hasTrigger phoa:SmallEnclosedSpace ;
   phoa:recommendedIntervention phoa:BreathingExercise ,
                                phoa:ExposureSteps ;
-  phoa:exactMatch <http://dbpedia.org/resource/Claustrophobia> .
+  phoa:exactMatch <http://dbpedia.org/resource/Claustrophobia> ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q186892> .
+
+
+
 
 phoa:SmallEnclosedSpace a phoa:Trigger ;
   rdfs:label "Small enclosed space"@en .

@@ -8,6 +8,8 @@ public class NotificationSummary {
     public String notificationUri;
     public String createdAt;     // schema:dateCreated
     public Double confidence;
+    public String status; // "unread" or "read"
+
 
     public String contextUri;
     public String contextEventName;
