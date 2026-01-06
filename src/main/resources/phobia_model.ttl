@@ -1,0 +1,263 @@
+@prefix phoa:  <http://example.org/phoa#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema:<https://schema.org/> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix time:  <http://www.w3.org/2006/time#> .
+@prefix sosa:  <http://www.w3.org/ns/sosa/> .
+
+phoa: a owl:Ontology ;
+  rdfs:label "PhoA Ontology"@en ;
+  rdfs:comment "Phobia-aware assistance ontology (users, phobias, triggers, context, interventions, devices, observations, alerts)."@en .
+
+### CLASSES ###
+phoa:User a owl:Class ;
+  rdfs:subClassOf schema:Person ;
+  rdfs:label "User"@en .
+
+phoa:UserGroup a owl:Class ;
+  rdfs:label "User Group"@en .
+
+phoa:Phobia a owl:Class ;
+  rdfs:subClassOf schema:MedicalCondition ;
+  rdfs:label "Phobia"@en .
+
+# (1) Reified link: a user's specific phobia instance (severity etc. are per-user and can change over time)
+phoa:PhobiaAffliction a owl:Class ;
+  rdfs:label "Phobia Affliction (per-user)"@en .
+
+phoa:Trigger a owl:Class ;
+  rdfs:label "Trigger"@en .
+
+phoa:Context a owl:Class ;
+  rdfs:label "Context / Situation"@en .
+
+phoa:Season a owl:Class ;
+  rdfs:subClassOf time:TemporalEntity ;
+  rdfs:label "Season"@en .
+
+phoa:Reaction a owl:Class ;
+  rdfs:label "Reaction"@en .
+
+phoa:Intervention a owl:Class ;
+  rdfs:label "Intervention"@en .
+
+# (2) Align intervention specializations with schema.org where helpful for interoperability
+phoa:MedicationRecommendation a owl:Class ;
+  rdfs:subClassOf phoa:Intervention, schema:Drug ;
+  rdfs:label "Medication Recommendation"@en .
+
+phoa:ExerciseRecommendation a owl:Class ;
+  rdfs:subClassOf phoa:Intervention, schema:ExercisePlan ;
+  rdfs:label "Exercise Recommendation"@en .
+
+phoa:SeriousGameRecommendation a owl:Class ;
+  rdfs:subClassOf phoa:Intervention, schema:SoftwareApplication ;
+  rdfs:label "Serious Game Recommendation"@en .
+
+phoa:WebResourceRecommendation a owl:Class ;
+  rdfs:subClassOf phoa:Intervention, schema:WebPage ;
+  rdfs:label "Web Resource Recommendation"@en .
+
+phoa:Notification a owl:Class ;
+  rdfs:label "Notification / Alert"@en .
+
+phoa:DataSource a owl:Class ;
+  rdfs:label "Data Source"@en .
+
+phoa:Device a owl:Class ;
+  rdfs:label "Device"@en .
+
+### OBJECT PROPERTIES ###
+phoa:hasPhobia a owl:ObjectProperty ;
+  rdfs:domain phoa:User ;
+  rdfs:range phoa:Phobia ;
+  rdfs:label "has phobia (shortcut)"@en ;
+  rdfs:comment "Convenience link. Use PhobiaAffliction for per-user details like severity."@en .
+
+phoa:hasPhobiaAffliction a owl:ObjectProperty ;
+  rdfs:domain phoa:User ;
+  rdfs:range phoa:PhobiaAffliction ;
+  rdfs:label "has phobia affliction"@en .
+
+phoa:phobiaType a owl:ObjectProperty ;
+  rdfs:domain phoa:PhobiaAffliction ;
+  rdfs:range phoa:Phobia ;
+  rdfs:label "phobia type"@en .
+
+phoa:memberOfGroup a owl:ObjectProperty ;
+  rdfs:domain phoa:User ;
+  rdfs:range phoa:UserGroup ;
+  rdfs:label "member of group"@en .
+
+phoa:hasTrigger a owl:ObjectProperty ;
+  rdfs:domain phoa:Phobia ;
+  rdfs:range phoa:Trigger ;
+  rdfs:label "has trigger"@en .
+
+phoa:hasContext a owl:ObjectProperty ;
+  rdfs:domain phoa:User ;
+  rdfs:range phoa:Context ;
+  rdfs:label "has context"@en .
+
+# (3) Context details: location + time/season/event (query-friendly)
+phoa:contextLocation a owl:ObjectProperty ;
+  rdfs:domain phoa:Context ;
+  rdfs:range schema:Place ;
+  rdfs:label "context location"@en .
+
+phoa:contextSeason a owl:ObjectProperty ;
+  rdfs:domain phoa:Context ;
+  rdfs:range phoa:Season ;
+  rdfs:label "context season"@en .
+
+phoa:contextEvent a owl:ObjectProperty ;
+  rdfs:domain phoa:Context ;
+  rdfs:range schema:Event ;
+  rdfs:label "context event"@en .
+
+phoa:contextTime a owl:ObjectProperty ;
+  rdfs:domain phoa:Context ;
+  rdfs:range time:TemporalEntity ;
+  rdfs:label "context time"@en .
+
+phoa:recommendedIntervention a owl:ObjectProperty ;
+  rdfs:domain phoa:Phobia ;
+  rdfs:range phoa:Intervention ;
+  rdfs:label "recommended intervention"@en .
+
+phoa:targetsPhobia a owl:ObjectProperty ;
+  rdfs:domain phoa:Intervention ;
+  rdfs:range phoa:Phobia ;
+  rdfs:label "targets phobia"@en .
+
+phoa:notifiedUser a owl:ObjectProperty ;
+  rdfs:domain phoa:Notification ;
+  rdfs:range phoa:User ;
+  rdfs:label "notified user"@en .
+
+phoa:deliveredIntervention a owl:ObjectProperty ;
+  rdfs:domain phoa:Notification ;
+  rdfs:range phoa:Intervention ;
+  rdfs:label "delivered intervention"@en .
+
+phoa:notificationContext a owl:ObjectProperty ;
+  rdfs:domain phoa:Notification ;
+  rdfs:range phoa:Context ;
+  rdfs:label "notification context"@en .
+
+phoa:reportedBy a owl:ObjectProperty ;
+  rdfs:domain phoa:Context ;
+  rdfs:range phoa:DataSource ;
+  rdfs:label "reported by"@en .
+
+phoa:usesDevice a owl:ObjectProperty ;
+  rdfs:domain phoa:User ;
+  rdfs:range phoa:Device ;
+  rdfs:label "uses device"@en .
+
+# (4) Observations (sensor/API signals) using SOSA
+phoa:hasObservation a owl:ObjectProperty ;
+  rdfs:domain phoa:User ;
+  rdfs:range sosa:Observation ;
+  rdfs:label "has observation"@en .
+
+### DATA PROPERTIES ###
+# (1) Severity is per-user (on PhobiaAffliction), not on the general Phobia concept.
+phoa:severity a owl:DatatypeProperty ;
+  rdfs:domain phoa:PhobiaAffliction ;
+  rdfs:range xsd:integer ;
+  rdfs:label "severity (1-10)"@en .
+
+phoa:confidence a owl:DatatypeProperty ;
+  rdfs:domain phoa:Notification ;
+  rdfs:range xsd:decimal ;
+  rdfs:label "confidence"@en .
+
+# Optional: affliction time bounds (useful for longitudinal tracking)
+phoa:afflictionStart a owl:DatatypeProperty ;
+  rdfs:domain phoa:PhobiaAffliction ;
+  rdfs:range xsd:dateTime ;
+  rdfs:label "affliction start"@en .
+
+phoa:afflictionEnd a owl:DatatypeProperty ;
+  rdfs:domain phoa:PhobiaAffliction ;
+  rdfs:range xsd:dateTime ;
+  rdfs:label "affliction end"@en .
+
+### MAPPING PROPERTY (for KB links) ###
+phoa:exactMatch a owl:AnnotationProperty ;
+  rdfs:subPropertyOf skos:exactMatch ;
+  rdfs:label "exact match to external KB"@en .
+
+#################################################################
+### INDIVIDUALS (example ABox) ###
+#################################################################
+
+phoa:Alice a phoa:User ;
+  schema:name "Alice" ;
+  phoa:hasPhobia phoa:Claustrophobia ;
+  phoa:hasPhobiaAffliction phoa:AliceClaustrophobiaAffliction ;
+  phoa:usesDevice phoa:AppleWatch ;
+  phoa:hasContext phoa:CurrentContext1 ;
+  phoa:hasObservation phoa:Obs1 .
+
+phoa:AppleWatch a phoa:Device ;
+  rdfs:label "Apple Watch"@en .
+
+# Per-user affliction details (severity etc.)
+phoa:AliceClaustrophobiaAffliction a phoa:PhobiaAffliction ;
+  phoa:phobiaType phoa:Claustrophobia ;
+  phoa:severity 7 ;
+  phoa:afflictionStart "2025-10-01T00:00:00Z"^^xsd:dateTime .
+
+phoa:Claustrophobia a phoa:Phobia ;
+  rdfs:label "Claustrophobia"@en ;
+  phoa:hasTrigger phoa:SmallEnclosedSpace ;
+  phoa:recommendedIntervention phoa:BreathingExercise ,
+                               phoa:ExposureSteps ;
+  phoa:exactMatch <http://dbpedia.org/resource/Claustrophobia> .
+
+phoa:SmallEnclosedSpace a phoa:Trigger ;
+  rdfs:label "Small enclosed space"@en .
+
+# Context example: Alice is currently in an elevator (place with geo) at a specific time
+phoa:CurrentContext1 a phoa:Context ;
+  phoa:contextEvent phoa:InElevatorEvent ;
+  phoa:contextLocation phoa:OfficeElevator ;
+  phoa:contextTime phoa:InstantNow .
+
+phoa:InstantNow a time:Instant ;
+  time:inXSDDateTime "2026-01-05T09:00:00Z"^^xsd:dateTime .
+
+phoa:InElevatorEvent a schema:Event ;
+  schema:name "In elevator"@en .
+
+phoa:OfficeElevator a schema:Place ;
+  schema:name "Office elevator"@en ;
+  schema:geo [
+    a schema:GeoCoordinates ;
+    schema:latitude 44.4268 ;
+    schema:longitude 26.1025
+  ] .
+
+# Interventions
+phoa:BreathingExercise a phoa:ExerciseRecommendation ;
+  rdfs:label "Box breathing (4-4-4-4)"@en ;
+  phoa:targetsPhobia phoa:Claustrophobia .
+
+phoa:ExposureSteps a phoa:ExerciseRecommendation ;
+  rdfs:label "Gradual exposure ladder for enclosed spaces"@en ;
+  phoa:targetsPhobia phoa:Claustrophobia .
+
+# Sensor observation example (SOSA): elevated heart rate detected by watch
+phoa:AppleWatchHeartRateSensor a sosa:Sensor ;
+  rdfs:label "Apple Watch heart-rate sensor"@en .
+
+phoa:Obs1 a sosa:Observation ;
+  sosa:madeBySensor phoa:AppleWatchHeartRateSensor ;
+  sosa:observedProperty schema:heartRate ;
+  sosa:hasSimpleResult 112 ;
+  sosa:resultTime "2026-01-05T09:00:10Z"^^xsd:dateTime .
