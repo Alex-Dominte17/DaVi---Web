@@ -29,13 +29,14 @@ public class NotificationQueryService {
             PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX time:   <http://www.w3.org/2006/time#>
 
-            SELECT ?n ?created ?conf ?ctx ?eventName ?placeName ?ctxTime ?i ?iLabel
+            SELECT ?n ?created ?conf ?status ?ctx ?eventName ?placeName ?ctxTime ?i ?iLabel
             WHERE {
               ?n a phoa:Notification ;
                  phoa:notifiedUser <%s> .
 
               OPTIONAL { ?n schema:dateCreated ?created . }
               OPTIONAL { ?n phoa:confidence ?conf . }
+              OPTIONAL { ?n phoa:status ?status . }
 
               OPTIONAL {
                 ?n phoa:notificationContext ?ctx .
@@ -90,6 +91,11 @@ public class NotificationQueryService {
                     if (row.contains("eventName")) x.contextEventName = row.get("eventName").asLiteral().getString();
                     if (row.contains("placeName")) x.contextPlaceName = row.get("placeName").asLiteral().getString();
                     if (row.contains("ctxTime")) x.contextTime = row.get("ctxTime").asLiteral().getString();
+                    if (row.contains("status")) {
+                        x.status = row.get("status").asLiteral().getString();
+                    } else {
+                        x.status = "unread";
+                    }
 
                     return x;
                 });
