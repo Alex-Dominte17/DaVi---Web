@@ -7,6 +7,8 @@
 @prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
 @prefix time:  <http://www.w3.org/2006/time#> .
 @prefix sosa:  <http://www.w3.org/ns/sosa/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
 
 phoa: a owl:Ontology ;
   rdfs:label "PhoA Ontology"@en ;
@@ -166,8 +168,11 @@ phoa:hasObservation a owl:ObjectProperty ;
   rdfs:range sosa:Observation ;
   rdfs:label "has observation"@en .
 
-
-
+phoa:hasEntourageContact a owl:ObjectProperty ;
+  rdfs:label "has entourage contact"@en ;
+  rdfs:comment "Links a user to a trusted contact (family, friend, coworker, doctor) who may receive alerts or provide input."@en ;
+  rdfs:domain phoa:User ;
+  rdfs:range foaf:Person .
 
 ### DATA PROPERTIES ###
 # (1) Severity is per-user (on PhobiaAffliction), not on the general Phobia concept.
@@ -202,6 +207,17 @@ phoa:ackTime a owl:DatatypeProperty ;
   rdfs:range xsd:dateTime ;
   rdfs:label "ack time"@en .
 
+phoa:relationship a owl:DatatypeProperty ;
+  rdfs:label "relationship"@en ;
+  rdfs:comment "Relationship type between the user and the contact (e.g., Family, Friend, Professional)."@en ;
+  rdfs:domain foaf:Person ;
+  rdfs:range xsd:string .
+
+phoa:alertsEnabled a owl:DatatypeProperty ;
+  rdfs:label "alerts enabled"@en ;
+  rdfs:comment "Whether this contact should receive alerts for the user."@en ;
+  rdfs:domain foaf:Person ;
+  rdfs:range xsd:boolean .
 
 ### MAPPING PROPERTY (for KB links) ###
 phoa:exactMatch a owl:AnnotationProperty ;
@@ -281,3 +297,12 @@ phoa:Obs1 a sosa:Observation ;
   sosa:observedProperty schema:heartRate ;
   sosa:hasSimpleResult 112 ;
   sosa:resultTime "2026-01-05T09:00:10Z"^^xsd:dateTime .
+
+
+phoa:Contact_Alice_MariaPopescu a foaf:Person ;
+  foaf:name "Maria Popescu" ;
+  foaf:mbox <mailto:maria@example.com> ;
+  phoa:relationship "Family" ;
+  phoa:alertsEnabled true .
+
+phoa:Alice phoa:hasEntourageContact phoa:Contact_Alice_MariaPopescu .
