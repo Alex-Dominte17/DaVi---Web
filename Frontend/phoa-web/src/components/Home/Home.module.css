@@ -1,0 +1,365 @@
+.homeContainer {
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.contextHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 0.6rem 1.25rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 6px -1px rgba(10, 10, 10, 0.05);
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 2.5rem;
+  border: 1px solid #f1f5f9;
+}
+
+.contextItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+}
+
+.iconTurq {
+  color: #2dd4bf;
+}
+
+.separator {
+  color: #bfc2c5;
+  font-weight: 300;
+}
+
+.contextHeader:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+.hero {
+  margin-bottom: 4rem;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.heroTitle span {
+  color: #2dd4bf;
+  font-size: 2.5rem;
+}
+
+.heroActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.btnPrimary {
+  background-color: #2dd4bf;
+  color: white;
+  padding: 0.85rem 1.75rem;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s;
+  font-size: 1rem;
+}
+
+.btnPrimary:hover {
+  background-color: #26b9a6;
+}
+
+.btnSecondary {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  padding: 0.85rem 1.75rem;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #475569;
+  font-size: 1rem;
+}
+
+.heroTags {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.tagRed {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.tagGray {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+.searchSection {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.searchWrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto 5rem;
+  display: flex;
+  align-items: center;
+}
+
+.searchWrapper input {
+  width: 100%;
+  padding: 1rem 3.5rem 1rem 3rem;
+  border-radius: 15px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.searchWrapper input:focus {
+  border-color: #2dd4bf;
+  box-shadow: 0 4px 15px rgba(45, 212, 191, 0.1);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.searchKbd {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: sans-serif;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.statsSection {
+  margin-bottom: 6rem;
+}
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.statCard {
+  background: white;
+  padding: 2.5rem 1.5rem;
+  border-radius: 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+}
+
+.statIcon {
+  color: #2dd4bf;
+  background-color: #f0fdfa;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.statCard h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0.5rem 0;
+}
+
+.statCard p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+}
+
+.statCard span {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.featuresSection {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.featuresHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.featuresMainTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.featuresMainTitle span {
+  color: #2dd4bf;
+}
+
+.featuresMainSubtitle {
+  max-width: 800px;
+  margin: 0 auto;
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-bottom: 5rem;
+}
+
+.featureCard {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 24px;
+  border: 1px solid #f1f5f9;
+  text-align: left;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+}
+
+.featureIcon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+  color: white;
+}
+
+.featuresGrid > div:nth-child(1) .featureIcon {
+  background: #2dd4bf;
+}
+.featuresGrid > div:nth-child(2) .featureIcon {
+  background: #3abff8;
+}
+.featuresGrid > div:nth-child(3) .featureIcon {
+  background: #4ade80;
+}
+.featuresGrid > div:nth-child(4) .featureIcon {
+  background: #fb923c;
+}
+.featuresGrid > div:nth-child(5) .featureIcon {
+  background: #22d3ee;
+}
+.featuresGrid > div:nth-child(6) .featureIcon {
+  background: #f97316;
+}
+
+.featureCard h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+}
+
+.featureCard p {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.footer {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 3rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+.techStack {
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.sectionSubtitle {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.endpointStatus {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.endpointStatus span {
+  background-color: #f1f5f9;
+  color: #64748b;
+  padding: 0.6rem 1.5rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.endpointStatus span::before {
+  content: "●";
+  color: #22c55e;
+  font-size: 1.2rem;
+}
