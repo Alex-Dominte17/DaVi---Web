@@ -1,0 +1,205 @@
+.container {
+  padding: 2rem 4rem;
+  background-color: #f8fafc;
+}
+
+.header h1 {
+  font-size: 2.2rem;
+  color: #1e293b;
+  font-weight: 800;
+  margin: 0;
+}
+.header p {
+  color: #64748b;
+  margin-top: 5px;
+}
+
+.searchBarRow {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.searchWrapper input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-size: 1rem;
+}
+
+.viewToggle {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.viewToggle button {
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.activeToggle {
+  background: white !important;
+  color: #1e293b !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filterRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
+.chip {
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.activeChip {
+  background: #2dd4bf;
+  color: white;
+  border-color: #2dd4bf;
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.linkedStatus {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+/* Grid și Carduri */
+.resourceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.resourceCard {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border-top: 6px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.borderTurq {
+  border-top-color: #2dd4bf;
+}
+.borderOrange {
+  border-top-color: #fb923c;
+}
+.borderBlue {
+  border-top-color: #38bdf8;
+}
+
+.cardHeader {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.badgeGray {
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #475569;
+}
+.badgeGreen {
+  background: #dcfce7;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #166534;
+}
+.badgeAmber {
+  background: #fef3c7;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+.metaText {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.resourceCard h3 {
+  font-size: 1.25rem;
+  color: #1e293b;
+  margin: 10px 0;
+}
+.resourceCard p {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.uriBox {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+
+.uriBox label {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.uriBox a {
+  font-size: 0.85rem;
+  color: #2dd4bf;
+  text-decoration: none;
+  word-break: break-all;
+  font-family: monospace;
+}
+
+.tagCloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tagCloud span {
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
