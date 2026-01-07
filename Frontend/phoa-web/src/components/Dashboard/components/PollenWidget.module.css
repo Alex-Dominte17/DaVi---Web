@@ -1,0 +1,82 @@
+.pollenCard {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.widgetHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.widgetHeader h4 {
+  margin: 0;
+  font-size: 15px;
+}
+.widgetHeader p {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.alertPill {
+  margin-left: auto;
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pollenCircle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.circularChart {
+  width: 120px;
+  height: 120px;
+}
+
+.circleBg {
+  fill: none;
+  stroke: #f1f5f9;
+  stroke-width: 2.8;
+}
+.circle {
+  fill: none;
+  stroke: #ef4444;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+}
+
+.pollenValue {
+  fill: #1e293b;
+  font-size: 8px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+.pollenUnit {
+  fill: #94a3b8;
+  font-size: 3px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.statusBox {
+  text-align: center;
+}
+.statusBadge {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.statusBox p {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 8px;
+  line-height: 1.4;
+}
