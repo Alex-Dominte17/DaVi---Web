@@ -6,6 +6,7 @@ public class LatestContextResponse {
 
     public String eventName;
     public String placeName;
+    public Boolean addressed;
 
     public Double lat;
     public Double lon;

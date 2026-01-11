@@ -65,9 +65,9 @@ public class UsersController {
     public ResponseEntity<?> evaluate(@PathVariable String userLocalName,
                                       @RequestBody(required = false) EvaluateRequest req) {
         if (req == null) req = new EvaluateRequest();
-        String notifUri = evaluationService.evaluateUser(userLocalName, req);
-        if (notifUri == null) return ResponseEntity.noContent().build();
-        return ResponseEntity.ok(java.util.Map.of("notificationUri", notifUri));
+        List<String> notifUris = evaluationService.evaluateUserAllContexts(userLocalName, req, 20);
+        if (notifUris.isEmpty()) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("notificationUris", notifUris));
     }
 
     @GetMapping("/{userLocalName}/notifications")
