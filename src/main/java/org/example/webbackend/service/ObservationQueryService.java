@@ -23,7 +23,7 @@ public class ObservationQueryService {
 
         String propertyUri = property.startsWith("http")
                 ? property
-                : SCHEMA + property;
+                : PHOA + property;
 
         String sparql = """
             PREFIX phoa: <http://example.org/phoa#>

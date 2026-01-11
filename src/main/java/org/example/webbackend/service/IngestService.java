@@ -1,11 +1,13 @@
 package org.example.webbackend.service;
 
+import org.apache.jena.shacl.ValidationReport;
 
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.example.webbackend.api.error.ShaclValidationException;
 import org.example.webbackend.dto.ContextRequest;
 import org.example.webbackend.dto.ObservationRequest;
 import org.example.webbackend.rdf.RdfStore;
@@ -56,9 +58,12 @@ public class IngestService {
     private static final Property SCHEMA_UNIT_TEXT = ResourceFactory.createProperty(SCHEMA_NS + "unitText");
 
     private final RdfStore store;
+    private final ShaclValidationService shaclValidationService;
 
-    public IngestService(RdfStore store) {
+
+    public IngestService(RdfStore store, ShaclValidationService shaclValidationService) {
         this.store = store;
+        this.shaclValidationService = shaclValidationService;
     }
 
     public String ingestContext(ContextRequest req) {
@@ -141,64 +146,136 @@ public class IngestService {
         }
     }
 
+//    public String ingestObservation(ObservationRequest req) {
+//        if (req == null || req.userId == null || req.observationId == null) {
+//            throw new IllegalArgumentException("userId and observationId are required");
+//        }
+//
+//        var ds = store.dataset();
+//        ds.begin(ReadWrite.WRITE);
+//        try {
+//            Model m = ds.getDefaultModel();
+//
+//            Resource user = m.createResource(PHOA_NS + req.userId);
+//
+//            Resource obs = m.createResource(PHOA_NS + req.observationId);
+//            obs.addProperty(RDF.type, SOSA_OBS);
+//
+//            // Link user -> observation
+//            user.addProperty(PHOA_HAS_OBSERVATION, obs);
+//
+//            // Sensor (create if not present)
+//            if (req.sensor != null && !req.sensor.isBlank()) {
+//                Resource sensor = m.createResource(PHOA_NS + req.sensor.trim().replaceAll("\\s+", ""));
+//                sensor.addProperty(RDF.type, SOSA_SENSOR);
+//                obs.addProperty(SOSA_MADE_BY, sensor);
+//            }
+//
+//            // observedProperty: allow full URI or short name (default to schema)
+//            if (req.observedProperty != null && !req.observedProperty.isBlank()) {
+//                String p = req.observedProperty.trim();
+//                String propUri = p.startsWith("http://") || p.startsWith("https://")
+//                        ? p
+//                        : (SCHEMA_NS + p);
+//                obs.addProperty(SOSA_OBS_PROP, m.createResource(propUri));
+//            }
+//
+//            // value: try numeric, else string
+//            if (req.value != null && !req.value.isBlank()) {
+//                Literal valueLit = tryParseNumberLiteral(m, req.value.trim());
+//                obs.addProperty(SOSA_SIMPLE, valueLit);
+//            }
+//
+//            // time
+//            if (req.time != null && !req.time.isBlank()) {
+//                obs.addProperty(SOSA_TIME, m.createTypedLiteral(req.time, XSDDatatype.XSDdateTime));
+//            }
+//
+//            // unit (optional): store on observation as schema:unitText (simple MVP)
+//            if (req.unit != null && !req.unit.isBlank()) {
+//                obs.addProperty(SCHEMA_UNIT_TEXT, req.unit);
+//            }
+//
+//            // (Optional) sourceName could be modeled similarly to DataSource; for MVP you can ignore or add later.
+//
+//            ds.commit();
+//            return obs.getURI();
+//        } finally {
+//            ds.end();
+//        }
+//    }
+
+
     public String ingestObservation(ObservationRequest req) {
         if (req == null || req.userId == null || req.observationId == null) {
             throw new IllegalArgumentException("userId and observationId are required");
         }
 
+        // 1) Build triples in a temporary model
+        Model tmp = ModelFactory.createDefaultModel();
+
+        Resource user = tmp.createResource(PHOA_NS + req.userId);
+
+        Resource obs = tmp.createResource(PHOA_NS + req.observationId);
+        obs.addProperty(RDF.type, SOSA_OBS);
+
+        // Link user -> observation
+        user.addProperty(PHOA_HAS_OBSERVATION, obs);
+
+        // Sensor (create if not present)
+        if (req.sensor != null && !req.sensor.isBlank()) {
+            Resource sensor = tmp.createResource(PHOA_NS + req.sensor.trim().replaceAll("\\s+", ""));
+            sensor.addProperty(RDF.type, SOSA_SENSOR);
+            obs.addProperty(SOSA_MADE_BY, sensor);
+        }
+
+        // observedProperty: allow full URI or short name
+        if (req.observedProperty != null && !req.observedProperty.isBlank()) {
+            String p = req.observedProperty.trim();
+            String propUri = p.startsWith("http://") || p.startsWith("https://")
+                    ? p
+                    : (SCHEMA_NS + p); // you can later change to PHOA_NS if you want phoa:heartRate etc.
+            obs.addProperty(SOSA_OBS_PROP, tmp.createResource(propUri));
+        }
+
+        // value: try numeric, else string
+        if (req.value != null && !req.value.isBlank()) {
+            Literal valueLit = tryParseNumberLiteral(tmp, req.value.trim());
+            obs.addProperty(SOSA_SIMPLE, valueLit);
+        }
+
+        // time
+        if (req.time != null && !req.time.isBlank()) {
+            obs.addProperty(SOSA_TIME, tmp.createTypedLiteral(req.time, XSDDatatype.XSDdateTime));
+        }
+
+        // unit (optional)
+        if (req.unit != null && !req.unit.isBlank()) {
+            obs.addProperty(SCHEMA_UNIT_TEXT, req.unit);
+        }
+
+        // 2) SHACL validate the temp model BEFORE writing
+        ValidationReport report = shaclValidationService.validate(tmp);
+        if (!report.conforms()) {
+            String ttl = shaclValidationService.reportAsTurtle(report);
+            throw new ShaclValidationException("SHACL validation failed for observation", ttl);
+        }
+
+        // 3) Only if valid: add to dataset and commit
         var ds = store.dataset();
         ds.begin(ReadWrite.WRITE);
         try {
-            Model m = ds.getDefaultModel();
-
-            Resource user = m.createResource(PHOA_NS + req.userId);
-
-            Resource obs = m.createResource(PHOA_NS + req.observationId);
-            obs.addProperty(RDF.type, SOSA_OBS);
-
-            // Link user -> observation
-            user.addProperty(PHOA_HAS_OBSERVATION, obs);
-
-            // Sensor (create if not present)
-            if (req.sensor != null && !req.sensor.isBlank()) {
-                Resource sensor = m.createResource(PHOA_NS + req.sensor.trim().replaceAll("\\s+", ""));
-                sensor.addProperty(RDF.type, SOSA_SENSOR);
-                obs.addProperty(SOSA_MADE_BY, sensor);
-            }
-
-            // observedProperty: allow full URI or short name (default to schema)
-            if (req.observedProperty != null && !req.observedProperty.isBlank()) {
-                String p = req.observedProperty.trim();
-                String propUri = p.startsWith("http://") || p.startsWith("https://")
-                        ? p
-                        : (SCHEMA_NS + p);
-                obs.addProperty(SOSA_OBS_PROP, m.createResource(propUri));
-            }
-
-            // value: try numeric, else string
-            if (req.value != null && !req.value.isBlank()) {
-                Literal valueLit = tryParseNumberLiteral(m, req.value.trim());
-                obs.addProperty(SOSA_SIMPLE, valueLit);
-            }
-
-            // time
-            if (req.time != null && !req.time.isBlank()) {
-                obs.addProperty(SOSA_TIME, m.createTypedLiteral(req.time, XSDDatatype.XSDdateTime));
-            }
-
-            // unit (optional): store on observation as schema:unitText (simple MVP)
-            if (req.unit != null && !req.unit.isBlank()) {
-                obs.addProperty(SCHEMA_UNIT_TEXT, req.unit);
-            }
-
-            // (Optional) sourceName could be modeled similarly to DataSource; for MVP you can ignore or add later.
-
+            ds.getDefaultModel().add(tmp);
             ds.commit();
             return obs.getURI();
+        } catch (RuntimeException e) {
+            ds.abort();
+            throw e;
         } finally {
             ds.end();
         }
     }
+
 
     private Literal tryParseNumberLiteral(Model m, String raw) {
         try {

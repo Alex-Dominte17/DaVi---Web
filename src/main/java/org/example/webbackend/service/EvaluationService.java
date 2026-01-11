@@ -28,6 +28,9 @@ public class EvaluationService {
     private static final Property PHOA_DELIVERED_INTERVENTION = ResourceFactory.createProperty(PHOA + "deliveredIntervention");
     private static final Property PHOA_CONFIDENCE          = ResourceFactory.createProperty(PHOA + "confidence");
 
+    private static final Property PHOA_DETECTED_PHOBIA =
+            ResourceFactory.createProperty(PHOA + "detectedPhobia");
+
     private static final Property SCHEMA_DATE_CREATED      = ResourceFactory.createProperty(SCHEMA + "dateCreated");
 
     private final RdfStore store;
@@ -39,32 +42,42 @@ public class EvaluationService {
     }
 
     public String evaluateUser(String userId, EvaluateRequest req) {
-        // 1) get latest context
         var latestCtx = contextQueryService.getLatestContext(userId);
         if (latestCtx == null || latestCtx.contextUri == null) return null;
 
-        // 2) get latest heart rate (optional, but used for confidence)
-        Long hr = getLatestLongObservation(userId, "heartRate");
+        Long hr       = getLatestLongObservation(userId, "heartRateBpm");
+        Long fear     = getLatestLongObservation(userId, "fearRating");     // optional
+        Long noise    = getLatestLongObservation(userId, "noiseLevelDb");   // optional
+        Long altitude = getLatestLongObservation(userId, "altitudeMeters"); // optional
 
-        // 3) check whether user has claustrophobia
-        boolean hasClaustrophobia = userHasPhobia(userId, "Claustrophobia");
-        if (!hasClaustrophobia) return null;
-
-        // 4) simple trigger heuristic: event/place contains "elevator"
         String event = latestCtx.eventName == null ? "" : latestCtx.eventName.toLowerCase();
         String place = latestCtx.placeName == null ? "" : latestCtx.placeName.toLowerCase();
-        boolean inElevator = event.contains("elevator") || place.contains("elevator");
-        if (!inElevator) return null;
 
-        // 5) determine confidence
-        double confidence = 0.6;
-        if (hr != null && hr > 100) confidence = 0.85;
+        List<String> phobias = getUserPhobiaTypes(userId);
+        if (phobias.isEmpty()) return null;
 
-        // 6) fetch recommended interventions from RDF for Claustrophobia
-        List<String> interventions = getRecommendedInterventions("Claustrophobia");
+        String bestPhobiaLocal = null;
+        double bestConfidence = 0.0;
 
-        // 7) create Notification RDF node
-        String notifId = "Notif_" + Instant.now().toString().replaceAll("[:\\.Z-]", "") + "_" + UUID.randomUUID().toString().substring(0, 8);
+        for (String phobiaUri : phobias) {
+            String phobiaLocal = phobiaUri.substring(phobiaUri.indexOf('#') + 1);
+
+            if (!matchesContext(phobiaLocal, event, place)) continue;
+
+            double confidence = computeConfidence(phobiaLocal, hr, fear, noise, altitude);
+            if (confidence > bestConfidence) {
+                bestConfidence = confidence;
+                bestPhobiaLocal = phobiaLocal;
+            }
+        }
+
+        if (bestPhobiaLocal == null) return null;
+
+
+        List<String> interventions = getRecommendedInterventions(bestPhobiaLocal);
+
+        String notifId = "Notif_" + Instant.now().toString().replaceAll("[:\\.Z-]", "") + "_" +
+                UUID.randomUUID().toString().substring(0, 8);
         String notifUri = PHOA + notifId;
 
         var ds = store.dataset();
@@ -77,9 +90,14 @@ public class EvaluationService {
 
             notif.addProperty(RDF.type, PHOA_NOTIFICATION);
             notif.addProperty(PHOA_NOTIFIED_USER, user);
+
             notif.addProperty(PHOA_NOTIFICATION_CONTEXT, ctx);
-            notif.addLiteral(PHOA_CONFIDENCE, m.createTypedLiteral(confidence));
-            notif.addProperty(SCHEMA_DATE_CREATED, m.createTypedLiteral(Instant.now().toString(), XSDDatatype.XSDdateTime));
+            notif.addLiteral(PHOA_CONFIDENCE, m.createTypedLiteral(bestConfidence));
+            notif.addProperty(SCHEMA_DATE_CREATED,
+                    m.createTypedLiteral(Instant.now().toString(), XSDDatatype.XSDdateTime));
+
+            notif.addProperty(PHOA_DETECTED_PHOBIA, m.createResource(PHOA + bestPhobiaLocal));
+
 
             for (String iUri : interventions) {
                 notif.addProperty(PHOA_DELIVERED_INTERVENTION, m.createResource(iUri));
@@ -112,7 +130,7 @@ public class EvaluationService {
 
     private Long getLatestLongObservation(String userId, String property) {
         String userUri = PHOA + userId;
-        String propUri = SCHEMA + property;
+        String propUri = PHOA + property;
 
         String sparql = """
             PREFIX phoa: <http://example.org/phoa#>
@@ -166,5 +184,82 @@ public class EvaluationService {
             ds.end();
         }
     }
+
+    private List<String> getUserPhobiaTypes(String userId) {
+        String sparql = """
+      PREFIX phoa: <http://example.org/phoa#>
+      SELECT DISTINCT ?phobia WHERE {
+        phoa:%s phoa:hasPhobiaAffliction ?aff .
+        ?aff phoa:phobiaType ?phobia .
+      }
+    """.formatted(userId);
+
+        Dataset ds = store.dataset();
+        ds.begin(ReadWrite.READ);
+        try (QueryExecution qexec = QueryExecutionFactory.create(sparql, ds)) {
+            ResultSet rs = qexec.execSelect();
+            List<String> out = new ArrayList<>();
+            while (rs.hasNext()) out.add(rs.nextSolution().get("phobia").toString());
+            return out;
+        } finally { ds.end(); }
+    }
+
+    private double computeConfidence(String phobiaLocal, Long hr, Long fear, Long noise, Long altitude) {
+        double c = 0.55;
+
+        if (fear != null) {
+            if (fear >= 8) c += 0.30;
+            else if (fear >= 6) c += 0.20;
+            else if (fear >= 4) c += 0.10;
+        }
+
+        if (hr != null && hr > 100) c += 0.15;
+
+        if ("Agoraphobia".equals(phobiaLocal) && noise != null && noise >= 75) c += 0.10;
+        if ("Acrophobia".equals(phobiaLocal) && altitude != null && altitude >= 20) c += 0.10;
+
+        return Math.min(0.95, c);
+    }
+
+
+    private boolean matchesContext(String phobiaLocal, String event, String place) {
+        String text = (event + " " + place);
+
+        switch (phobiaLocal) {
+            case "Claustrophobia":
+                return text.contains("elevator")
+                        || text.contains("enclosed")
+                        || text.contains("small")
+                        || text.contains("tight")
+                        || text.contains("locked");
+
+            case "Acrophobia":
+                return text.contains("balcony")
+                        || text.contains("roof")
+                        || text.contains("bridge")
+                        || text.contains("height")
+                        || text.contains("high altitude")
+                        || text.contains("stairs");
+
+            case "Arachnophobia":
+                return text.contains("spider")
+                        || text.contains("basement")
+                        || text.contains("attic")
+                        || text.contains("storage")
+                        || text.contains("shed");
+
+            case "Agoraphobia":
+                return text.contains("mall")
+                        || text.contains("crowd")
+                        || text.contains("supermarket")
+                        || text.contains("station")
+                        || text.contains("metro")
+                        || text.contains("bus");
+
+            default:
+                return false;
+        }
+    }
+
 }
 

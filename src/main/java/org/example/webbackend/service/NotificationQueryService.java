@@ -22,41 +22,47 @@ public class NotificationQueryService {
     public List<NotificationSummary> listUserNotifications(String userId, int limit) {
         String userUri = PHOA + userId;
 
-        // Pull notification core fields + one intervention per row (we'll group in Java)
         String sparql = """
             PREFIX phoa:   <http://example.org/phoa#>
             PREFIX schema: <https://schema.org/>
             PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX time:   <http://www.w3.org/2006/time#>
-
-            SELECT ?n ?created ?conf ?status ?ctx ?eventName ?placeName ?ctxTime ?i ?iLabel
+        
+            SELECT ?n ?created ?conf ?status ?ctx ?eventName ?placeName ?ctxTime
+                   ?phobia ?phobiaLabel
+                   ?i ?iLabel
             WHERE {
               ?n a phoa:Notification ;
                  phoa:notifiedUser <%s> .
-
+        
               OPTIONAL { ?n schema:dateCreated ?created . }
               OPTIONAL { ?n phoa:confidence ?conf . }
               OPTIONAL { ?n phoa:status ?status . }
-
+        
+              OPTIONAL {
+                ?n phoa:detectedPhobia ?phobia .
+                OPTIONAL { ?phobia rdfs:label ?phobiaLabel . }
+              }
+        
               OPTIONAL {
                 ?n phoa:notificationContext ?ctx .
-
+        
                 OPTIONAL {
                   ?ctx phoa:contextEvent ?ev .
                   OPTIONAL { ?ev schema:name ?eventName . }
                 }
-
+        
                 OPTIONAL {
                   ?ctx phoa:contextLocation ?place .
                   OPTIONAL { ?place schema:name ?placeName . }
                 }
-
+        
                 OPTIONAL {
                   ?ctx phoa:contextTime ?tNode .
                   OPTIONAL { ?tNode time:inXSDDateTime ?ctxTime . }
                 }
               }
-
+        
               OPTIONAL {
                 ?n phoa:deliveredIntervention ?i .
                 OPTIONAL { ?i rdfs:label ?iLabel . }
@@ -65,6 +71,7 @@ public class NotificationQueryService {
             ORDER BY DESC(?created)
             LIMIT %d
         """.formatted(userUri, Math.max(1, limit));
+
 
         Dataset ds = store.dataset();
         ds.begin(ReadWrite.READ);
@@ -86,6 +93,8 @@ public class NotificationQueryService {
 
                     if (row.contains("created")) x.createdAt = row.get("created").asLiteral().getString();
                     if (row.contains("conf")) x.confidence = row.get("conf").asLiteral().getDouble();
+                    if (row.contains("phobia")) x.detectedPhobia = row.get("phobia").toString();
+                    if (row.contains("phobiaLabel")) x.detectedPhobiaLabel = row.get("phobiaLabel").asLiteral().getString();
 
                     if (row.contains("ctx")) x.contextUri = row.get("ctx").toString();
                     if (row.contains("eventName")) x.contextEventName = row.get("eventName").asLiteral().getString();
