@@ -234,6 +234,12 @@ phoa:alertsEnabled a owl:DatatypeProperty ;
   rdfs:domain foaf:Person ;
   rdfs:range xsd:boolean .
 
+phoa:youtubeLink a owl:DatatypeProperty ;
+  rdfs:label "YouTube link"@en ;
+  rdfs:domain phoa:ExerciseRecommendation ;
+  rdfs:range  xsd:anyURI ;
+  rdfs:subPropertyOf schema:url .
+
 ### MAPPING PROPERTY (for KB links) ###
 phoa:exactMatch a owl:AnnotationProperty ;
   rdfs:subPropertyOf skos:exactMatch ;
@@ -425,11 +431,28 @@ phoa:OfficeElevator a schema:Place ;
 # Interventions
 phoa:BreathingExercise a phoa:ExerciseRecommendation ;
   rdfs:label "Box breathing (4-4-4-4)"@en ;
-  phoa:targetsPhobia phoa:Claustrophobia .
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia ;
+  phoa:youtubeLink "https://www.youtube.com/watch?v=aPYmZOhJF5Q"^^xsd:anyURI .
 
 phoa:ExposureSteps a phoa:ExerciseRecommendation ;
   rdfs:label "Gradual exposure ladder for enclosed spaces"@en ;
-  phoa:targetsPhobia phoa:Claustrophobia .
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia ;
+  phoa:youtubeLink "https://www.youtube.com/watch?v=n2rKVj75P3M"^^xsd:anyURI .
+
+phoa:GroundingExercise a phoa:ExerciseRecommendation ;
+  rdfs:label "5-4-3-2-1 grounding exercise"@en ;
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia ;
+  phoa:youtubeLink "https://www.youtube.com/watch?v=30VMIEmA114"^^xsd:anyURI .
+
+phoa:CognitiveReframing a phoa:ExerciseRecommendation ;
+  rdfs:label "Cognitive reframing (challenge anxious thoughts)"@en ;
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia ;
+  phoa:youtubeLink "https://www.youtube.com/watch?v=tfkhkFwCtxs"^^xsd:anyURI .
+
+phoa:SafePlacePlanning a phoa:ExerciseRecommendation ;
+  rdfs:label "Safe-place planning (exit routes + coping plan)"@en ;
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Agoraphobia, phoa:Acrophobia ;
+  phoa:youtubeLink "https://www.youtube.com/watch?v=JA86YOd4zx4"^^xsd:anyURI .
 
 # Sensor observation example (SOSA): elevated heart rate detected by watch
 phoa:AppleWatchHeartRateSensor a sosa:Sensor ;
@@ -444,14 +467,7 @@ phoa:PhoneMicrophone a sosa:Sensor ;
 phoa:SelfReportInput a sosa:Sensor ;
   rdfs:label "In-app self report"@en .
 
-phoa:GroundingExercise a phoa:ExerciseRecommendation ;
-  rdfs:label "5-4-3-2-1 grounding exercise"@en .
 
-phoa:CognitiveReframing a phoa:ExerciseRecommendation ;
-  rdfs:label "Cognitive reframing (challenge anxious thoughts)"@en .
-
-phoa:SafePlacePlanning a phoa:ExerciseRecommendation ;
-  rdfs:label "Safe-place planning (exit routes + coping plan)"@en .
 
 phoa:Obs1 a sosa:Observation ;
   sosa:madeBySensor phoa:AppleWatchHeartRateSensor ;
