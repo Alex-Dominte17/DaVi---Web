@@ -7,6 +7,7 @@ import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.RDF;
 import org.example.webbackend.dto.EvaluateRequest;
+import org.example.webbackend.dto.LatestContextResponse;
 import org.example.webbackend.rdf.RdfStore;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,8 @@ public class EvaluationService {
     private static final String SCHEMA = "https://schema.org/";
 
     private static final Resource PHOA_NOTIFICATION = ResourceFactory.createResource(PHOA + "Notification");
+    private static final Property PHOA_CONTEXT_ADDRESSED =
+            ResourceFactory.createProperty(PHOA + "addressed");
 
     private static final Property PHOA_NOTIFIED_USER       = ResourceFactory.createProperty(PHOA + "notifiedUser");
     private static final Property PHOA_NOTIFICATION_CONTEXT= ResourceFactory.createProperty(PHOA + "notificationContext");
@@ -41,73 +44,89 @@ public class EvaluationService {
         this.contextQueryService = contextQueryService;
     }
 
-    public String evaluateUser(String userId, EvaluateRequest req) {
-        var latestCtx = contextQueryService.getLatestContext(userId);
-        if (latestCtx == null || latestCtx.contextUri == null) return null;
+    public List<String> evaluateUserAllContexts(String userId, EvaluateRequest req, int limit) {
+        List<String> created = new ArrayList<>();
+
+        List<LatestContextResponse> contexts = contextQueryService.listUnaddressedContexts(userId, limit);
+        if (contexts == null || contexts.isEmpty()) return created;
 
         Long hr       = getLatestLongObservation(userId, "heartRateBpm");
-        Long fear     = getLatestLongObservation(userId, "fearRating");     // optional
-        Long noise    = getLatestLongObservation(userId, "noiseLevelDb");   // optional
-        Long altitude = getLatestLongObservation(userId, "altitudeMeters"); // optional
-
-        String event = latestCtx.eventName == null ? "" : latestCtx.eventName.toLowerCase();
-        String place = latestCtx.placeName == null ? "" : latestCtx.placeName.toLowerCase();
+        Long fear     = getLatestLongObservation(userId, "fearRating");
+        Long noise    = getLatestLongObservation(userId, "noiseLevelDb");
+        Long altitude = getLatestLongObservation(userId, "altitudeMeters");
 
         List<String> phobias = getUserPhobiaTypes(userId);
-        if (phobias.isEmpty()) return null;
+        if (phobias.isEmpty()) return created;
 
-        String bestPhobiaLocal = null;
-        double bestConfidence = 0.0;
+        for (var ctxDto : contexts) {
+            if (ctxDto == null || ctxDto.contextUri == null) continue;
 
-        for (String phobiaUri : phobias) {
-            String phobiaLocal = phobiaUri.substring(phobiaUri.indexOf('#') + 1);
+            String event = ctxDto.eventName == null ? "" : ctxDto.eventName.toLowerCase();
+            String place = ctxDto.placeName == null ? "" : ctxDto.placeName.toLowerCase();
 
-            if (!matchesContext(phobiaLocal, event, place)) continue;
+            String bestPhobiaLocal = null;
+            double bestConfidence = 0.0;
 
-            double confidence = computeConfidence(phobiaLocal, hr, fear, noise, altitude);
-            if (confidence > bestConfidence) {
-                bestConfidence = confidence;
-                bestPhobiaLocal = phobiaLocal;
+            for (String phobiaUri : phobias) {
+                String phobiaLocal = phobiaUri.substring(phobiaUri.indexOf('#') + 1);
+                if (!matchesContext(phobiaLocal, event, place)) continue;
+
+                double confidence = computeConfidence(phobiaLocal, hr, fear, noise, altitude);
+                if (confidence > bestConfidence) {
+                    bestConfidence = confidence;
+                    bestPhobiaLocal = phobiaLocal;
+                }
+            }
+
+            List<String> interventions = null;
+            String notifUri = null;
+
+            if (bestPhobiaLocal != null) {
+                interventions = getRecommendedInterventions(bestPhobiaLocal);
+
+                String notifId = "Notif_" + Instant.now().toString().replaceAll("[:\\.Z-]", "") + "_" +
+                        UUID.randomUUID().toString().substring(0, 8);
+                notifUri = PHOA + notifId;
+            }
+
+            Dataset ds = store.dataset();
+            ds.begin(ReadWrite.WRITE);
+            try {
+                Model m = ds.getDefaultModel();
+                Resource ctx = m.createResource(ctxDto.contextUri);
+
+                ctx.removeAll(PHOA_CONTEXT_ADDRESSED);
+                ctx.addLiteral(PHOA_CONTEXT_ADDRESSED, true);
+
+                if (bestPhobiaLocal != null) {
+                    Resource notif = m.createResource(notifUri);
+                    Resource user  = m.createResource(PHOA + userId);
+
+                    notif.addProperty(RDF.type, PHOA_NOTIFICATION);
+                    notif.addProperty(PHOA_NOTIFIED_USER, user);
+                    notif.addProperty(PHOA_NOTIFICATION_CONTEXT, ctx);
+                    notif.addLiteral(PHOA_CONFIDENCE, m.createTypedLiteral(bestConfidence));
+                    notif.addProperty(SCHEMA_DATE_CREATED,
+                            m.createTypedLiteral(Instant.now().toString(), XSDDatatype.XSDdateTime));
+                    notif.addProperty(PHOA_DETECTED_PHOBIA, m.createResource(PHOA + bestPhobiaLocal));
+
+                    for (String iUri : interventions) {
+                        notif.addProperty(PHOA_DELIVERED_INTERVENTION, m.createResource(iUri));
+                    }
+
+                    created.add(notifUri);
+                }
+
+                ds.commit();
+            } catch (Exception e) {
+                ds.abort();
+                throw e;
+            } finally {
+                ds.end();
             }
         }
 
-        if (bestPhobiaLocal == null) return null;
-
-
-        List<String> interventions = getRecommendedInterventions(bestPhobiaLocal);
-
-        String notifId = "Notif_" + Instant.now().toString().replaceAll("[:\\.Z-]", "") + "_" +
-                UUID.randomUUID().toString().substring(0, 8);
-        String notifUri = PHOA + notifId;
-
-        var ds = store.dataset();
-        ds.begin(ReadWrite.WRITE);
-        try {
-            Model m = ds.getDefaultModel();
-            Resource notif = m.createResource(notifUri);
-            Resource user  = m.createResource(PHOA + userId);
-            Resource ctx   = m.createResource(latestCtx.contextUri);
-
-            notif.addProperty(RDF.type, PHOA_NOTIFICATION);
-            notif.addProperty(PHOA_NOTIFIED_USER, user);
-
-            notif.addProperty(PHOA_NOTIFICATION_CONTEXT, ctx);
-            notif.addLiteral(PHOA_CONFIDENCE, m.createTypedLiteral(bestConfidence));
-            notif.addProperty(SCHEMA_DATE_CREATED,
-                    m.createTypedLiteral(Instant.now().toString(), XSDDatatype.XSDdateTime));
-
-            notif.addProperty(PHOA_DETECTED_PHOBIA, m.createResource(PHOA + bestPhobiaLocal));
-
-
-            for (String iUri : interventions) {
-                notif.addProperty(PHOA_DELIVERED_INTERVENTION, m.createResource(iUri));
-            }
-
-            ds.commit();
-            return notifUri;
-        } finally {
-            ds.end();
-        }
+        return created;
     }
 
     private boolean userHasPhobia(String userId, String phobiaLocalName) {

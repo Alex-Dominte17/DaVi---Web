@@ -81,6 +81,11 @@ phoa:noiseLevelDb a rdf:Property ;
 phoa:fearRating a rdf:Property ;
   rdfs:label "Fear rating (0-10)"@en .
 
+phoa:addressed a rdf:Property ;
+  rdfs:domain phoa:Context ;
+  rdfs:range xsd:boolean ;
+  rdfs:label "addressed"@en .
+
 phoa:heartRateBpm a sosa:ObservableProperty ;
   rdfs:label "Heart rate (bpm)"@en .
 
