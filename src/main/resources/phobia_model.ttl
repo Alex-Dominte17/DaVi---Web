@@ -292,7 +292,10 @@ phoa:Claustrophobia a phoa:Phobia ;
   rdfs:label "Claustrophobia"@en ;
   phoa:hasTrigger phoa:SmallEnclosedSpace ;
   phoa:recommendedIntervention phoa:BreathingExercise ,
-                               phoa:ExposureSteps ;
+                                 phoa:ExposureSteps ,
+                                 phoa:VRETcity ,
+                                 phoa:NHSPhobiasSelfHelp ,
+                                 phoa:NHSInformPhobiasGuide ;
   phoa:exactMatch <http://dbpedia.org/resource/Claustrophobia> ;
   skos:exactMatch <http://www.wikidata.org/entity/Q186892> .
 
@@ -302,7 +305,12 @@ phoa:Acrophobia a phoa:Phobia ;
   rdfs:label "Acrophobia"@en ;
   phoa:hasTrigger phoa:HighAltitude ;
   phoa:recommendedIntervention phoa:GroundingExercise ,
-                               phoa:ExposureSteps ;
+                                 phoa:ExposureSteps ,
+                                 phoa:ZeroPhobiaHeights ,
+                                 phoa:VRETcity ,
+                                 phoa:Propranolol ,
+                                 phoa:NHSPhobiasSelfHelp ,
+                                 phoa:NHSInformPhobiasGuide ;
   skos:exactMatch <http://dbpedia.org/resource/Acrophobia> ;
   skos:exactMatch <http://www.wikidata.org/entity/Q207783> .
 
@@ -331,7 +339,12 @@ phoa:Arachnophobia a phoa:Phobia ;
   rdfs:label "Arachnophobia"@en ;
   phoa:hasTrigger phoa:Spider ;
   phoa:recommendedIntervention phoa:BreathingExercise ,
-                               phoa:CognitiveReframing ;
+                                 phoa:CognitiveReframing ,
+                                 phoa:ZeroPhobiaSpiders ,
+                                 phoa:PhobysSpiders ,
+                                 phoa:Propranolol ,
+                                 phoa:NHSPhobiasSelfHelp ,
+                                 phoa:NHSInformPhobiasGuide ;
   skos:exactMatch <http://dbpedia.org/resource/Arachnophobia> ;
   skos:exactMatch <http://www.wikidata.org/entity/Q220783> .
 
@@ -356,7 +369,13 @@ phoa:Agoraphobia a phoa:Phobia ;
   rdfs:label "Agoraphobia"@en ;
   phoa:hasTrigger phoa:CrowdedPlace ;
   phoa:recommendedIntervention phoa:ExposureSteps ,
-                               phoa:SafePlacePlanning ;
+                                 phoa:SafePlacePlanning ,
+                                 phoa:Sertraline ,
+                                 phoa:Escitalopram ,
+                                 phoa:VRETcity ,
+                                 phoa:NHSTreatmentAgoraphobia ,
+                                 phoa:NHSPhobiasSelfHelp ,
+                                 phoa:NHSInformPhobiasGuide ;
   skos:exactMatch <http://dbpedia.org/resource/Agoraphobia> ;
   skos:exactMatch <http://www.wikidata.org/entity/Q174589> .
 
@@ -453,6 +472,78 @@ phoa:SafePlacePlanning a phoa:ExerciseRecommendation ;
   rdfs:label "Safe-place planning (exit routes + coping plan)"@en ;
   phoa:targetsPhobia phoa:Claustrophobia, phoa:Agoraphobia, phoa:Acrophobia ;
   phoa:youtubeLink "https://www.youtube.com/watch?v=JA86YOd4zx4"^^xsd:anyURI .
+
+
+###########
+# MedicationRecommendation (schema:Drug)
+###########
+
+phoa:Sertraline a phoa:MedicationRecommendation ;
+  rdfs:label "Sertraline (SSRI)"@en ;
+  schema:activeIngredient "sertraline" ;
+  schema:dosageForm "tablet" ;
+  phoa:targetsPhobia phoa:Agoraphobia .
+
+phoa:Escitalopram a phoa:MedicationRecommendation ;
+  rdfs:label "Escitalopram (SSRI)"@en ;
+  schema:activeIngredient "escitalopram" ;
+  schema:dosageForm "tablet" ;
+  phoa:targetsPhobia phoa:Agoraphobia .
+
+phoa:Propranolol a phoa:MedicationRecommendation ;
+  rdfs:label "Propranolol (beta-blocker; situational physical symptoms)"@en ;
+  schema:activeIngredient "propranolol" ;
+  schema:dosageForm "tablet" ;
+  phoa:targetsPhobia phoa:Acrophobia, phoa:Arachnophobia .
+
+###########
+# SeriousGameRecommendation (schema:SoftwareApplication)
+###########
+
+phoa:ZeroPhobiaHeights a phoa:SeriousGameRecommendation ;
+  rdfs:label "ZeroPhobia: Fear of Heights (VR)"@en ;
+  schema:applicationCategory "HealthApplication" ;
+  schema:url "https://play.google.com/store/apps/details?hl=en&id=com.insession.zero_phobia"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Acrophobia .
+
+phoa:ZeroPhobiaSpiders a phoa:SeriousGameRecommendation ;
+  rdfs:label "ZeroPhobia: Fear of Spiders (AR)"@en ;
+  schema:applicationCategory "HealthApplication" ;
+  schema:url "https://play.google.com/store/apps/details?hl=en&id=com.insession.spinnenangst"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Arachnophobia .
+
+phoa:PhobysSpiders a phoa:SeriousGameRecommendation ;
+  rdfs:label "Phobys (AR exposure training for fear of spiders)"@en ;
+  schema:applicationCategory "HealthApplication" ;
+  schema:url "https://mcn.unibas.ch/de/publications/mobile-apps/phobys/"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Arachnophobia .
+
+phoa:VRETcity a phoa:SeriousGameRecommendation ;
+  rdfs:label "VRETcity (VR exposure city)"@en ;
+  schema:applicationCategory "HealthApplication" ;
+  schema:url "https://vretcity.com/en"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Acrophobia, phoa:Claustrophobia, phoa:Agoraphobia .
+
+###########
+# WebResourceRecommendation (schema:WebPage)
+###########
+
+phoa:NHSPhobiasSelfHelp a phoa:WebResourceRecommendation ;
+  rdfs:label "NHS: Self-help for phobias"@en ;
+  schema:url "https://www.nhs.uk/mental-health/conditions/phobias/self-help/"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia .
+
+phoa:NHSInformPhobiasGuide a phoa:WebResourceRecommendation ;
+  rdfs:label "NHS Inform: Phobias self-help guide"@en ;
+  schema:url "https://www.nhsinform.scot/illnesses-and-conditions/mental-health/mental-health-self-help-guides/phobias-self-help-guide/"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia .
+
+phoa:NHSTreatmentAgoraphobia a phoa:WebResourceRecommendation ;
+  rdfs:label "NHS: Treatment for agoraphobia"@en ;
+  schema:url "https://www.nhs.uk/mental-health/conditions/agoraphobia/treatment/"^^xsd:anyURI ;
+  phoa:targetsPhobia phoa:Agoraphobia .
+
+
 
 # Sensor observation example (SOSA): elevated heart rate detected by watch
 phoa:AppleWatchHeartRateSensor a sosa:Sensor ;

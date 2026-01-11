@@ -73,7 +73,7 @@ public class UsersController {
     @GetMapping("/{userLocalName}/notifications")
     public ResponseEntity<?> listNotifications(
             @PathVariable String userLocalName,
-            @RequestParam(required = false, defaultValue = "20") int limit
+            @RequestParam(required = false, defaultValue = "200") int limit
     ) {
         return ResponseEntity.ok(notificationQueryService.listUserNotifications(userLocalName, limit));
     }
