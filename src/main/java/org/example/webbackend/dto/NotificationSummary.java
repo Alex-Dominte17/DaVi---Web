@@ -20,13 +20,16 @@ public class NotificationSummary {
     public List<InterventionItem> interventions = new ArrayList<>();
 
     public static class InterventionItem {
-        public String uri;
+        public String iri;
+        public String typeIri;
         public String label;
+        public String url;
 
-        public InterventionItem() {}
-        public InterventionItem(String uri, String label) {
-            this.uri = uri;
+        public InterventionItem(String iri, String typeIri, String label, String url) {
+            this.iri = iri;
+            this.typeIri = typeIri;
             this.label = label;
+            this.url = url;
         }
     }
 }

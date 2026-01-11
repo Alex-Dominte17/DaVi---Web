@@ -2,6 +2,7 @@ package org.example.webbackend.service;
 
 
 import org.apache.jena.query.*;
+import org.apache.jena.rdf.model.RDFNode;
 import org.example.webbackend.dto.NotificationSummary;
 import org.example.webbackend.rdf.RdfStore;
 import org.springframework.stereotype.Service;
@@ -23,64 +24,72 @@ public class NotificationQueryService {
         String userUri = PHOA + userId;
 
         String sparql = """
-            PREFIX phoa:   <http://example.org/phoa#>
-            PREFIX schema: <https://schema.org/>
-            PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX time:   <http://www.w3.org/2006/time#>
-        
-            SELECT ?n ?created ?conf ?status ?ctx ?eventName ?placeName ?ctxTime
-                   ?phobia ?phobiaLabel
-                   ?i ?iLabel
-            WHERE {
-              ?n a phoa:Notification ;
-                 phoa:notifiedUser <%s> .
-        
-              OPTIONAL { ?n schema:dateCreated ?created . }
-              OPTIONAL { ?n phoa:confidence ?conf . }
-              OPTIONAL { ?n phoa:status ?status . }
-        
-              OPTIONAL {
-                ?n phoa:detectedPhobia ?phobia .
-                OPTIONAL { ?phobia rdfs:label ?phobiaLabel . }
-              }
-        
-              OPTIONAL {
-                ?n phoa:notificationContext ?ctx .
-        
-                OPTIONAL {
-                  ?ctx phoa:contextEvent ?ev .
-                  OPTIONAL { ?ev schema:name ?eventName . }
-                }
-        
-                OPTIONAL {
-                  ?ctx phoa:contextLocation ?place .
-                  OPTIONAL { ?place schema:name ?placeName . }
-                }
-        
-                OPTIONAL {
-                  ?ctx phoa:contextTime ?tNode .
-                  OPTIONAL { ?tNode time:inXSDDateTime ?ctxTime . }
-                }
-              }
-        
-              OPTIONAL {
-                ?n phoa:deliveredIntervention ?i .
-                OPTIONAL { ?i rdfs:label ?iLabel . }
-              }
+        PREFIX phoa:   <http://example.org/phoa#>
+        PREFIX schema: <https://schema.org/>
+        PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX time:   <http://www.w3.org/2006/time#>
+    
+        SELECT ?n ?created ?conf ?status ?ctx ?eventName ?placeName ?ctxTime
+               ?phobia ?phobiaLabel
+               ?i ?iLabel ?iType ?iUrl
+        WHERE {
+          ?n a phoa:Notification ;
+             phoa:notifiedUser <%s> .
+    
+          OPTIONAL { ?n schema:dateCreated ?created . }
+          OPTIONAL { ?n phoa:confidence ?conf . }
+          OPTIONAL { ?n phoa:status ?status . }
+    
+          OPTIONAL {
+            ?n phoa:detectedPhobia ?phobia .
+            OPTIONAL { ?phobia rdfs:label ?phobiaLabel . }
+          }
+    
+          OPTIONAL {
+            ?n phoa:notificationContext ?ctx .
+    
+            OPTIONAL {
+              ?ctx phoa:contextEvent ?ev .
+              OPTIONAL { ?ev schema:name ?eventName . }
             }
-            ORDER BY DESC(?created)
-            LIMIT %d
-        """.formatted(userUri, Math.max(1, limit));
+    
+            OPTIONAL {
+              ?ctx phoa:contextLocation ?place .
+              OPTIONAL { ?place schema:name ?placeName . }
+            }
+    
+            OPTIONAL {
+              ?ctx phoa:contextTime ?tNode .
+              OPTIONAL { ?tNode time:inXSDDateTime ?ctxTime . }
+            }
+          }
+    
+          OPTIONAL {
+            ?n phoa:deliveredIntervention ?i .
+            OPTIONAL { ?i rdfs:label ?iLabel . }
 
+            # Get the specific intervention type (subclass of phoa:Intervention)
+            OPTIONAL {
+              ?i rdf:type ?iType .
+              ?iType rdfs:subClassOf* phoa:Intervention .
+            }
+
+            # Get a URL: either schema:url or your phoa:youtubeLink
+            OPTIONAL { ?i schema:url ?iUrl . }
+            OPTIONAL { ?i phoa:youtubeLink ?iUrl . }
+          }
+        }
+        ORDER BY DESC(?created)
+        LIMIT %d
+    """.formatted(userUri, Math.max(1, limit));
 
         Dataset ds = store.dataset();
         ds.begin(ReadWrite.READ);
         try (QueryExecution qexec = QueryExecutionFactory.create(sparql, ds)) {
             ResultSet rs = qexec.execSelect();
 
-            // Group by notification URI
             Map<String, NotificationSummary> grouped = new LinkedHashMap<>();
-            // Avoid duplicate interventions if multiple labels/languages appear
             Map<String, Set<String>> seenInterventions = new HashMap<>();
 
             while (rs.hasNext()) {
@@ -100,6 +109,7 @@ public class NotificationQueryService {
                     if (row.contains("eventName")) x.contextEventName = row.get("eventName").asLiteral().getString();
                     if (row.contains("placeName")) x.contextPlaceName = row.get("placeName").asLiteral().getString();
                     if (row.contains("ctxTime")) x.contextTime = row.get("ctxTime").asLiteral().getString();
+
                     if (row.contains("status")) {
                         x.status = row.get("status").asLiteral().getString();
                     } else {
@@ -111,14 +121,25 @@ public class NotificationQueryService {
 
                 if (row.contains("i")) {
                     String iUri = row.get("i").toString();
-                    String iLabel = row.contains("iLabel") ? row.get("iLabel").asLiteral().getString() : null;
 
-                    String key = notifUri;
-                    seenInterventions.computeIfAbsent(key, kk -> new HashSet<>());
-                    // Deduplicate by intervention URI
-                    if (seenInterventions.get(key).add(iUri)) {
+                    String iLabel = row.contains("iLabel")
+                            ? row.get("iLabel").asLiteral().getString()
+                            : null;
+
+                    String iTypeIri = row.contains("iType") && row.get("iType").isResource()
+                            ? row.getResource("iType").getURI()
+                            : (row.contains("iType") ? row.get("iType").toString() : null);
+
+                    String iUrl = null;
+                    if (row.contains("iUrl")) {
+                        RDFNode u = row.get("iUrl");
+                        iUrl = u.isLiteral() ? u.asLiteral().getString() : u.toString();
+                    }
+
+                    seenInterventions.computeIfAbsent(notifUri, kk -> new HashSet<>());
+                    if (seenInterventions.get(notifUri).add(iUri)) {
                         NotificationSummary.InterventionItem item =
-                                new NotificationSummary.InterventionItem(iUri, iLabel);
+                                new NotificationSummary.InterventionItem(iUri, iTypeIri, iLabel, iUrl);
                         n.interventions.add(item);
                     }
                 }
