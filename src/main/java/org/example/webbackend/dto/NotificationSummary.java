@@ -9,7 +9,8 @@ public class NotificationSummary {
     public String createdAt;     // schema:dateCreated
     public Double confidence;
     public String status; // "unread" or "read"
-
+    public String detectedPhobia;       // URI
+    public String detectedPhobiaLabel;
 
     public String contextUri;
     public String contextEventName;

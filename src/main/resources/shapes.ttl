@@ -1,0 +1,56 @@
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix phoa:  <http://example.org/phoa#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix sosa:  <http://www.w3.org/ns/sosa/> .
+@prefix schema:<https://schema.org/> .
+
+# --- Entourage contacts ---
+phoa:EntourageContactShape
+  a sh:NodeShape ;
+  sh:targetClass foaf:Person ;
+
+  sh:property [
+    sh:path foaf:name ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:message "Contact must have foaf:name (string)." ;
+  ] ;
+
+  sh:property [
+    sh:path phoa:alertsEnabled ;
+    sh:datatype xsd:boolean ;
+    sh:maxCount 1 ;
+    sh:message "alertsEnabled must be xsd:boolean." ;
+  ] .
+
+# --- Observations ---
+phoa:ObservationShape
+  a sh:NodeShape ;
+  sh:targetClass sosa:Observation ;
+
+  sh:property [
+    sh:path sosa:observedProperty ;
+    sh:minCount 1 ;
+    sh:message "Observation must have sosa:observedProperty." ;
+  ] ;
+
+  sh:property [
+    sh:path sosa:hasSimpleResult ;
+    sh:minCount 1 ;
+    sh:message "Observation must have sosa:hasSimpleResult." ;
+  ] ;
+
+  sh:property [
+    sh:path sosa:resultTime ;
+    sh:datatype xsd:dateTime ;
+    sh:minCount 1 ;
+    sh:message "Observation must have sosa:resultTime as xsd:dateTime." ;
+  ] ;
+
+  sh:property [
+    sh:path schema:unitText ;
+    sh:datatype xsd:string ;
+    sh:maxCount 1 ;
+    sh:message "schema:unitText must be a string." ;
+  ] .

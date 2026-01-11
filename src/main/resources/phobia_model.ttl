@@ -72,7 +72,17 @@ phoa:DataSource a owl:Class ;
 phoa:Device a owl:Class ;
   rdfs:label "Device"@en .
 
+phoa:altitudeMeters a rdf:Property ;
+  rdfs:label "Altitude (meters)"@en .
 
+phoa:noiseLevelDb a rdf:Property ;
+  rdfs:label "Noise level (dB)"@en .
+
+phoa:fearRating a rdf:Property ;
+  rdfs:label "Fear rating (0-10)"@en .
+
+phoa:heartRateBpm a sosa:ObservableProperty ;
+  rdfs:label "Heart rate (bpm)"@en .
 
 ### OBJECT PROPERTIES ###
 phoa:hasPhobia a owl:ObjectProperty ;
@@ -224,6 +234,7 @@ phoa:exactMatch a owl:AnnotationProperty ;
   rdfs:subPropertyOf skos:exactMatch ;
   rdfs:label "exact match to external KB"@en .
 
+
 #################################################################
 ### INDIVIDUALS (example ABox) ###
 #################################################################
@@ -231,10 +242,26 @@ phoa:exactMatch a owl:AnnotationProperty ;
 phoa:Alice a phoa:User ;
   schema:name "Alice" ;
   phoa:hasPhobia phoa:Claustrophobia ;
+  phoa:hasPhobia phoa:Acrophobia ;
+  phoa:hasAllergy phoa:PollenAllergy ;
   phoa:hasPhobiaAffliction phoa:AliceClaustrophobiaAffliction ;
+  phoa:hasPhobiaAffliction phoa:AliceAcrophobiaAffliction ;
+  phoa:hasPhobiaAffliction phoa:AliceArachnophobiaAffliction ;
+  phoa:hasPhobiaAffliction phoa:AliceAgoraphobiaAffliction ;
   phoa:usesDevice phoa:AppleWatch ;
   phoa:hasContext phoa:CurrentContext1 ;
-  phoa:hasObservation phoa:Obs1 .
+  phoa:hasObservation phoa:Obs1 ;
+  phoa:hasContext phoa:CurrentContext_Heights1 ;
+  phoa:hasContext phoa:CurrentContext_Spider1 ;
+  phoa:hasContext phoa:CurrentContext_Crowd1 ;
+  phoa:hasObservation phoa:Obs_Heights_HeartRate1 ;
+  phoa:hasObservation phoa:Obs_Heights_Altitude1 ;
+  phoa:hasObservation phoa:Obs_Heights_FearRating1 ;
+  phoa:hasObservation phoa:Obs_Spider_HeartRate1 ;
+  phoa:hasObservation phoa:Obs_Spider_FearRating1 ;
+  phoa:hasObservation phoa:Obs_Crowd_HeartRate1 ;
+  phoa:hasObservation phoa:Obs_Crowd_NoiseLevel1 ;
+  phoa:hasObservation phoa:Obs_Crowd_FearRating1 .
 
 phoa:AppleWatch a phoa:Device ;
   rdfs:label "Apple Watch"@en .
@@ -245,6 +272,11 @@ phoa:AliceClaustrophobiaAffliction a phoa:PhobiaAffliction ;
   phoa:severity 7 ;
   phoa:afflictionStart "2025-10-01T00:00:00Z"^^xsd:dateTime .
 
+phoa:AliceAcrophobiaAffliction a phoa:PhobiaAffliction ;
+  phoa:phobiaType phoa:Acrophobia ;
+  phoa:severity 5 ;
+  phoa:afflictionStart "2025-11-15T00:00:00Z"^^xsd:dateTime .
+
 phoa:Claustrophobia a phoa:Phobia ;
   rdfs:label "Claustrophobia"@en ;
   phoa:hasTrigger phoa:SmallEnclosedSpace ;
@@ -253,11 +285,117 @@ phoa:Claustrophobia a phoa:Phobia ;
   phoa:exactMatch <http://dbpedia.org/resource/Claustrophobia> ;
   skos:exactMatch <http://www.wikidata.org/entity/Q186892> .
 
+###################################################
+
+phoa:Acrophobia a phoa:Phobia ;
+  rdfs:label "Acrophobia"@en ;
+  phoa:hasTrigger phoa:HighAltitude ;
+  phoa:recommendedIntervention phoa:GroundingExercise ,
+                               phoa:ExposureSteps ;
+  skos:exactMatch <http://dbpedia.org/resource/Acrophobia> ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q207783> .
+
+phoa:CurrentContext_Heights1 a phoa:Context ;
+  phoa:contextEvent phoa:OnBalconyEvent ;
+  phoa:contextLocation phoa:OfficeBalcony ;
+  phoa:contextTime phoa:InstantHeights1 .
+
+phoa:InstantHeights1 a time:Instant ;
+  time:inXSDDateTime "2026-01-05T10:30:00Z"^^xsd:dateTime .
+
+phoa:OnBalconyEvent a schema:Event ;
+  schema:name "On balcony"@en .
+
+phoa:OfficeBalcony a schema:Place ;
+  schema:name "Office balcony (floor 10)"@en ;
+  schema:geo [
+    a schema:GeoCoordinates ;
+    schema:latitude 44.4268 ;
+    schema:longitude 26.1025
+  ] .
+
+###################################################
+
+phoa:Arachnophobia a phoa:Phobia ;
+  rdfs:label "Arachnophobia"@en ;
+  phoa:hasTrigger phoa:Spider ;
+  phoa:recommendedIntervention phoa:BreathingExercise ,
+                               phoa:CognitiveReframing ;
+  skos:exactMatch <http://dbpedia.org/resource/Arachnophobia> ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q220783> .
+
+phoa:CurrentContext_Spider1 a phoa:Context ;
+  phoa:contextEvent phoa:InBasementEvent ;
+  phoa:contextLocation phoa:HomeBasement ;
+  phoa:contextTime phoa:InstantSpider1 .
+
+phoa:InstantSpider1 a time:Instant ;
+  time:inXSDDateTime "2026-01-06T19:10:00Z"^^xsd:dateTime .
+
+phoa:InBasementEvent a schema:Event ;
+  schema:name "In basement"@en .
+
+phoa:HomeBasement a schema:Place ;
+  schema:name "Home basement"@en .
+
+###################################################
+
+
+phoa:Agoraphobia a phoa:Phobia ;
+  rdfs:label "Agoraphobia"@en ;
+  phoa:hasTrigger phoa:CrowdedPlace ;
+  phoa:recommendedIntervention phoa:ExposureSteps ,
+                               phoa:SafePlacePlanning ;
+  skos:exactMatch <http://dbpedia.org/resource/Agoraphobia> ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q174589> .
+
+phoa:CurrentContext_Crowd1 a phoa:Context ;
+  phoa:contextEvent phoa:InMallCrowdEvent ;
+  phoa:contextLocation phoa:CityMall ;
+  phoa:contextTime phoa:InstantCrowd1 .
+
+phoa:InstantCrowd1 a time:Instant ;
+  time:inXSDDateTime "2026-01-07T17:45:00Z"^^xsd:dateTime .
+
+phoa:InMallCrowdEvent a schema:Event ;
+  schema:name "In shopping mall (crowded)"@en .
+
+phoa:CityMall a schema:Place ;
+  schema:name "City mall"@en ;
+  schema:geo [
+    a schema:GeoCoordinates ;
+    schema:latitude 44.4350 ;
+    schema:longitude 26.1030
+  ] .
+
+##########################################################
+
+phoa:AliceArachnophobiaAffliction a phoa:PhobiaAffliction ;
+  phoa:phobiaType phoa:Arachnophobia ;
+  phoa:severity 6 ;
+  phoa:afflictionStart "2025-09-10T00:00:00Z"^^xsd:dateTime .
+
+phoa:AliceAgoraphobiaAffliction a phoa:PhobiaAffliction ;
+  phoa:phobiaType phoa:Agoraphobia ;
+  phoa:severity 4 ;
+  phoa:afflictionStart "2025-08-20T00:00:00Z"^^xsd:dateTime .
+
+phoa:PollenAllergy a phoa:Allergy ;
+  rdfs:label "Pollen allergy"@en ;
+  skos:exactMatch <http://dbpedia.org/resource/Allergy> ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q128581> .
 
 
 
 phoa:SmallEnclosedSpace a phoa:Trigger ;
   rdfs:label "Small enclosed space"@en .
+
+
+phoa:HighAltitude a phoa:Trigger .
+phoa:Spider a phoa:Trigger .
+phoa:CrowdedPlace a phoa:Trigger .
+phoa:SmallEnclosedSpace a phoa:Trigger .
+
 
 # Context example: Alice is currently in an elevator (place with geo) at a specific time
 phoa:CurrentContext1 a phoa:Context ;
@@ -292,12 +430,91 @@ phoa:ExposureSteps a phoa:ExerciseRecommendation ;
 phoa:AppleWatchHeartRateSensor a sosa:Sensor ;
   rdfs:label "Apple Watch heart-rate sensor"@en .
 
+phoa:PhoneBarometer a sosa:Sensor ;
+  rdfs:label "Phone barometer"@en .
+
+phoa:PhoneMicrophone a sosa:Sensor ;
+  rdfs:label "Phone microphone"@en .
+
+phoa:SelfReportInput a sosa:Sensor ;
+  rdfs:label "In-app self report"@en .
+
+phoa:GroundingExercise a phoa:ExerciseRecommendation ;
+  rdfs:label "5-4-3-2-1 grounding exercise"@en .
+
+phoa:CognitiveReframing a phoa:ExerciseRecommendation ;
+  rdfs:label "Cognitive reframing (challenge anxious thoughts)"@en .
+
+phoa:SafePlacePlanning a phoa:ExerciseRecommendation ;
+  rdfs:label "Safe-place planning (exit routes + coping plan)"@en .
+
 phoa:Obs1 a sosa:Observation ;
   sosa:madeBySensor phoa:AppleWatchHeartRateSensor ;
-  sosa:observedProperty schema:heartRate ;
+  sosa:observedProperty phoa:heartRateBpm ;
   sosa:hasSimpleResult 112 ;
   sosa:resultTime "2026-01-05T09:00:10Z"^^xsd:dateTime .
 
+
+############################
+# Acrophobia-related observations
+############################
+phoa:Obs_Heights_HeartRate1 a sosa:Observation ;
+  sosa:madeBySensor phoa:AppleWatchHeartRateSensor ;
+  sosa:observedProperty phoa:heartRateBpm ;
+  sosa:hasSimpleResult 126 ;
+  sosa:resultTime "2026-01-05T10:30:20Z"^^xsd:dateTime .
+
+phoa:Obs_Heights_Altitude1 a sosa:Observation ;
+  sosa:madeBySensor phoa:PhoneBarometer ;
+  sosa:observedProperty phoa:altitudeMeters ;
+  sosa:hasSimpleResult 32 ;
+  sosa:resultTime "2026-01-05T10:30:05Z"^^xsd:dateTime .
+
+phoa:Obs_Heights_FearRating1 a sosa:Observation ;
+  sosa:madeBySensor phoa:SelfReportInput ;
+  sosa:observedProperty phoa:fearRating ;
+  sosa:hasSimpleResult 8 ;
+  sosa:resultTime "2026-01-05T10:30:25Z"^^xsd:dateTime .
+
+
+############################
+# Arachnophobia-related observations
+############################
+phoa:Obs_Spider_HeartRate1 a sosa:Observation ;
+  sosa:madeBySensor phoa:AppleWatchHeartRateSensor ;
+  sosa:observedProperty phoa:heartRateBpm ;
+  sosa:hasSimpleResult 118 ;
+  sosa:resultTime "2026-01-06T19:10:15Z"^^xsd:dateTime .
+
+phoa:Obs_Spider_FearRating1 a sosa:Observation ;
+  sosa:madeBySensor phoa:SelfReportInput ;
+  sosa:observedProperty phoa:fearRating ;
+  sosa:hasSimpleResult 9 ;
+  sosa:resultTime "2026-01-06T19:10:30Z"^^xsd:dateTime .
+
+
+############################
+# Agoraphobia-related observations
+############################
+phoa:Obs_Crowd_HeartRate1 a sosa:Observation ;
+  sosa:madeBySensor phoa:AppleWatchHeartRateSensor ;
+  sosa:observedProperty phoa:heartRateBpm ;
+  sosa:hasSimpleResult 122 ;
+  sosa:resultTime "2026-01-07T17:45:20Z"^^xsd:dateTime .
+
+
+
+phoa:Obs_Crowd_FearRating1 a sosa:Observation ;
+  sosa:madeBySensor phoa:SelfReportInput ;
+  sosa:observedProperty phoa:fearRating ;
+  sosa:hasSimpleResult 7 ;
+  sosa:resultTime "2026-01-07T17:45:30Z"^^xsd:dateTime .
+
+phoa:Obs_Crowd_NoiseLevel1 a sosa:Observation ;
+  sosa:madeBySensor phoa:PhoneMicrophone ;
+  sosa:observedProperty phoa:noiseLevelDb ;
+  sosa:hasSimpleResult 78 ;
+  sosa:resultTime "2026-01-07T17:45:05Z"^^xsd:dateTime .
 
 phoa:Contact_Alice_MariaPopescu a foaf:Person ;
   foaf:name "Maria Popescu" ;
