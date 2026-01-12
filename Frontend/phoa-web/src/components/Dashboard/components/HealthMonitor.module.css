@@ -3,7 +3,7 @@
   padding: 24px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 .header {
@@ -11,25 +11,30 @@
   justify-content: space-between;
   margin-bottom: 24px;
 }
+
 .titleGroup {
   display: flex;
   gap: 12px;
   align-items: center;
 }
+
 .watchIcon {
   background: #f0fdfa;
   padding: 8px;
   border-radius: 10px;
   font-size: 20px;
 }
+
 .header h3 {
   margin: 0;
   font-size: 18px;
 }
+
 .header span {
   font-size: 12px;
   color: #94a3b8;
 }
+
 .connected {
   color: #22c55e;
   font-size: 12px;
@@ -42,6 +47,7 @@
   gap: 16px;
   margin-bottom: 24px;
 }
+
 .statBox {
   background: #ecf8f7;
   padding: 20px;
@@ -56,6 +62,7 @@
   margin: 8px 0;
   color: #1e293b;
 }
+
 .label {
   font-size: 12px;
   color: #64748b;
@@ -65,6 +72,7 @@
 .stressSection {
   margin-top: 16px;
 }
+
 .stressInfo {
   display: flex;
   justify-content: space-between;
@@ -72,17 +80,113 @@
   font-size: 14px;
   font-weight: 600;
 }
+
 .stressStatus {
   color: #22c55e;
 }
+
 .barBg {
   height: 10px;
   background: #e2e8f0;
   border-radius: 5px;
   overflow: hidden;
 }
+
 .barFill {
   height: 100%;
   background: #22c55e;
   border-radius: 5px;
+}
+
+.monitorCard {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #fee2e2;
+  margin-top: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.header h3 {
+  font-size: 1.1rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.metricItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f1f5f9;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  transition: transform 0.2s;
+}
+
+.metricItem:hover {
+  transform: translateY(-2px);
+  border-color: #fecaca;
+}
+
+.metricIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metricData {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.unit {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.pulseIcon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }

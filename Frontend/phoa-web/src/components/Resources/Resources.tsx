@@ -1,15 +1,67 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Resources.module.css";
-import { Search, LayoutGrid, List } from "lucide-react";
+import {
+  Search,
+  LayoutGrid,
+  List,
+  ExternalLink,
+  Info,
+  Loader2,
+} from "lucide-react";
+import { apiService } from "../../api/apiService";
+import { InterventionResource } from "./types";
 
 const Resources: React.FC = () => {
+  const [resources, setResources] = useState<InterventionResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All Resources");
+
   const categories = [
     "All Resources",
     "Exercises",
     "Medications",
     "Serious Games",
-    "Web Resources",
   ];
+
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        const data = await apiService.getAllInterventions();
+        setResources(data);
+      } catch (err) {
+        console.error("Error loading resources:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadResources();
+  }, []);
+
+  const getReadableType = (typeIri: string) => {
+    if (typeIri.includes("Exercise")) return "Exercises";
+    if (typeIri.includes("Medication")) return "Medications";
+    if (typeIri.includes("Game")) return "Serious Games";
+    return "Resource";
+  };
+
+  const filteredResources = resources.filter((res) => {
+    const matchesSearch = res.label.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (activeCategory === "All Resources") {
+      return matchesSearch;
+    }
+    
+    const resourceType = getReadableType(res.typeIri);
+    return matchesSearch && resourceType === activeCategory;
+  });
+
+  const getBorderClass = (typeIri: string) => {
+    if (typeIri.includes("Exercise")) return styles.borderTurq;
+    if (typeIri.includes("Medication")) return styles.borderBlue;
+    if (typeIri.includes("Game")) return styles.borderOrange;
+    return styles.borderGreen;
+  };
 
   return (
     <div className={styles.container}>
@@ -24,6 +76,8 @@ const Resources: React.FC = () => {
           <input
             type="text"
             placeholder="Search remedies, phobias, exercises..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className={styles.viewToggle}>
@@ -37,10 +91,11 @@ const Resources: React.FC = () => {
       </div>
 
       <div className={styles.filterRow}>
-        {categories.map((cat, index) => (
+        {categories.map((cat) => (
           <button
             key={cat}
-            className={index === 0 ? styles.activeChip : styles.chip}
+            className={activeCategory === cat ? styles.activeChip : styles.chip}
+            onClick={() => setActiveCategory(cat)}
           >
             {cat}
           </button>
@@ -49,73 +104,61 @@ const Resources: React.FC = () => {
 
       <div className={styles.statusRow}>
         <span>
-          Showing <strong>6</strong> resources
+          Showing <strong>{filteredResources.length}</strong> resources 
+          {activeCategory !== "All Resources" && ` in ${activeCategory}`}
         </span>
         <span className={styles.linkedStatus}>● RDF Data Linked</span>
       </div>
 
-      <div className={styles.resourceGrid}>
-        <article className={`${styles.resourceCard} ${styles.borderTurq}`}>
-          <div className={styles.cardHeader}>
-            <span className={styles.badgeGray}>Exercise</span>
-            <span className={styles.badgeGreen}>easy</span>
-            <span className={styles.metaText}>5 min</span>
-          </div>
-          <h3>4-7-8 Breathing Technique</h3>
-          <p>
-            A calming breathing pattern that helps reduce anxiety and panic
-            symptoms. Inhal...
-          </p>
-          <div className={styles.uriBox}>
-            <label>Resource URI</label>
-            <a href="#">http://phoa-project.org/remedy/breathing-478</a>
-          </div>
-          <div className={styles.tagCloud}>
-            <span>Claustrophobia</span>
-            <span>Panic Disorder</span>
-            <span>Anxiety</span>
-          </div>
-        </article>
+      {loading ? (
+        <div className={styles.loaderBox}>
+          <Loader2 className={styles.spinner} />
+          <p>Loading semantic knowledge base...</p>
+        </div>
+      ) : (
+        <div className={styles.resourceGrid}>
+          {filteredResources.map((res) => (
+            <article
+              key={res.iri}
+              className={`${styles.resourceCard} ${getBorderClass(res.typeIri)}`}
+            >
+              <div className={styles.cardContent}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.badgeGray}>
+                    {getReadableType(res.typeIri).replace(/s$/, '')}
+                  </span>
+                  <span className={styles.linkedIcon}>🔗</span>
+                </div>
 
-        <article className={`${styles.resourceCard} ${styles.borderOrange}`}>
-          <div className={styles.cardHeader}>
-            <span className={styles.badgeGray}>Serious Game</span>
-            <span className={styles.badgeAmber}>medium</span>
-            <span className={styles.metaText}>15 min</span>
-          </div>
-          <h3>Spider Desensitization Game</h3>
-          <p>
-            A gradual exposure game that helps users overcome arachnophobia
-            through controll...
-          </p>
-          <div className={styles.uriBox}>
-            <label>Resource URI</label>
-            <a href="#">http://phoa-project.org/game/spider-exposure</a>
-          </div>
-          <div className={styles.tagCloud}>
-            <span>Arachnophobia</span>
-          </div>
-        </article>
+                <h3>{res.label}</h3>
 
-        <article className={`${styles.resourceCard} ${styles.borderBlue}`}>
-          <div className={styles.cardHeader}>
-            <span className={styles.badgeGray}>Medication</span>
-          </div>
-          <h3>Propranolol Information</h3>
-          <p>
-            Beta-blocker medication commonly used to manage physical symptoms of
-            anxiety suc...
-          </p>
-          <div className={styles.uriBox}>
-            <label>Resource URI</label>
-            <a href="#">http://phoa-project.org/medication/propranolol</a>
-          </div>
-          <div className={styles.tagCloud}>
-            <span>Social Phobia</span>
-            <span>Performance Anxiety</span>
-          </div>
-        </article>
-      </div>
+                <div className={styles.uriBox}>
+                  <label>Resource IRI</label>
+                  <div className={styles.iriLink}>
+                    <Info size={12} />
+                    <span>{res.iri}</span>
+                  </div>
+                </div>
+
+                <div
+                  className={styles.cardActions}
+                  style={{ marginTop: "auto" }}
+                >
+                  <a
+                    href={res.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.btnVisit}
+                  >
+                    <ExternalLink size={16} />
+                    Access Resource
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

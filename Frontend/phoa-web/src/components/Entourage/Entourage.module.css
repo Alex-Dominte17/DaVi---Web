@@ -3,18 +3,21 @@
   background-color: #f8fafc;
   min-height: 100vh;
 }
+
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 2rem;
 }
+
 .header h1 {
   font-size: 2.2rem;
   font-weight: 800;
   color: #1e293b;
   margin: 0;
 }
+
 .header p {
   color: #64748b;
   margin: 5px 0 0;
@@ -53,16 +56,19 @@
   align-items: center;
   margin-bottom: 2rem;
 }
+
 .iconBox {
   background: #f0fdfa;
   padding: 10px;
   border-radius: 12px;
 }
+
 .cardTitleRow h2 {
   margin: 0;
   font-size: 1.25rem;
   color: #1e293b;
 }
+
 .cardTitleRow span {
   font-size: 0.9rem;
   color: #94a3b8;
@@ -94,17 +100,20 @@
 .contactInfo {
   flex: 1;
 }
+
 .nameRow {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 4px;
 }
+
 .nameRow h3 {
   margin: 0;
   font-size: 1rem;
   color: #1e293b;
 }
+
 .contactInfo p {
   margin: 0;
   font-size: 0.9rem;
@@ -117,14 +126,17 @@
   font-size: 0.75rem;
   font-weight: 600;
 }
+
 .family {
   background: #fee2e2;
   color: #ef4444;
 }
+
 .friend {
   background: #ccfbf1;
   color: #0d9488;
 }
+
 .professional {
   background: #dbeafe;
   color: #2563eb;
@@ -135,6 +147,7 @@
   align-items: center;
   gap: 1.5rem;
 }
+
 .alertsOn {
   color: #22c55e;
   font-size: 0.85rem;
@@ -143,6 +156,7 @@
   align-items: center;
   gap: 5px;
 }
+
 .alertsOff {
   color: #94a3b8;
   font-size: 0.85rem;
@@ -151,6 +165,7 @@
   align-items: center;
   gap: 5px;
 }
+
 .btnChat {
   background: none;
   border: none;
@@ -168,6 +183,7 @@
   gap: 12px;
   color: #475569;
 }
+
 .semanticNote p {
   margin: 0;
   font-size: 0.85rem;
@@ -182,12 +198,14 @@
   margin-bottom: 1.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
+
 .sideHeader {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 1.25rem;
 }
+
 .sideHeader h3 {
   margin: 0;
   font-size: 1.1rem;
@@ -200,11 +218,13 @@
   align-items: center;
   margin-bottom: 1rem;
 }
+
 .settingRow h4 {
   margin: 0;
   font-size: 0.95rem;
   color: #1e293b;
 }
+
 .settingRow p {
   margin: 2px 0 0;
   font-size: 0.8rem;
@@ -219,6 +239,7 @@
   position: relative;
   cursor: pointer;
 }
+
 .toggle::after {
   content: "";
   position: absolute;
@@ -230,9 +251,11 @@
   left: 2px;
   transition: 0.2s;
 }
+
 .on {
   background: #2dd4bf;
 }
+
 .on::after {
   left: 18px;
 }
@@ -244,6 +267,7 @@
   padding: 10px;
   border-radius: 12px;
 }
+
 .smallAvatar {
   width: 32px;
   height: 32px;
@@ -257,20 +281,24 @@
   font-weight: 700;
   margin-right: 10px;
 }
+
 .inviteName {
   flex: 1;
   font-size: 0.9rem;
   font-weight: 500;
   color: #1e293b;
 }
+
 .inviteActions {
   display: flex;
   gap: 10px;
 }
+
 .iconCheck {
   color: #22c55e;
   cursor: pointer;
 }
+
 .iconX {
   color: #ef4444;
   cursor: pointer;
@@ -282,11 +310,13 @@
   display: flex;
   gap: 15px;
 }
+
 .privacyCard h4 {
   margin: 0;
   font-size: 0.95rem;
   color: #1e3a8a;
 }
+
 .privacyCard p {
   margin: 4px 0 0;
   font-size: 0.8rem;
@@ -407,4 +437,104 @@
 .btnAddTip:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modalContent {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.inputGroup input,
+.inputGroup select {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: #2dd4bf;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2dd4bf;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.closeBtn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.sideDesc {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.popupTitle {
+  margin: 0px;
 }
