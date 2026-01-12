@@ -307,3 +307,82 @@
   align-items: center;
   margin-bottom: 1rem;
 }
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 2rem;
+  }
+
+  .resourceGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+  }
+
+  .searchBarRow {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .viewToggle {
+    justify-content: center;
+  }
+
+  .filterRow {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chip {
+    white-space: nowrap;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+  }
+
+  .resourceGrid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .statusRow {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .resourceCard h3 {
+    font-size: 1.1rem;
+  }
+
+  .iriLink span {
+    font-size: 0.65rem;
+  }
+
+  .uriBox {
+    padding: 8px;
+    margin: 1rem 0;
+  }
+
+  .btnVisit {
+    font-size: 0.85rem;
+    padding: 12px;
+  }
+}
