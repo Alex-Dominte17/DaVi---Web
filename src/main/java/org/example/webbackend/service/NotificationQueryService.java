@@ -40,7 +40,8 @@ public class NotificationQueryService {
           OPTIONAL { ?n schema:dateCreated ?created . }
           OPTIONAL { ?n phoa:confidence ?conf . }
           OPTIONAL { ?n phoa:status ?status . }
-    
+          FILTER ( !BOUND(?status) || LCASE(STR(?status)) != "read" )
+                
           OPTIONAL {
             ?n phoa:detectedPhobia ?phobia .
             OPTIONAL { ?phobia rdfs:label ?phobiaLabel . }
