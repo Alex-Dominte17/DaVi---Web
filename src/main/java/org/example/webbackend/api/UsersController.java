@@ -1,8 +1,6 @@
 package org.example.webbackend.api;
 
-import org.example.webbackend.dto.EvaluateRequest;
-import org.example.webbackend.dto.LatestContextResponse;
-import org.example.webbackend.dto.LatestObservationResponse;
+import org.example.webbackend.dto.*;
 import org.example.webbackend.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +18,7 @@ public class UsersController {
     private final ObservationQueryService observationQueryService;
     private final EvaluationService evaluationService;
     private final NotificationQueryService notificationQueryService;
+    private final UserPhobiaService userPhobiaService;
 
 
 
@@ -29,13 +28,15 @@ public class UsersController {
             ContextQueryService contextQueryService,
             ObservationQueryService observationQueryService,
             EvaluationService evaluationService,
-            NotificationQueryService notificationQueryService
+            NotificationQueryService notificationQueryService,
+            UserPhobiaService userPhobiaService
     ) {
         this.phobiaQueryService = phobiaQueryService;
         this.contextQueryService = contextQueryService;
         this.observationQueryService = observationQueryService;
         this.evaluationService = evaluationService;
         this.notificationQueryService = notificationQueryService;
+        this.userPhobiaService=userPhobiaService;
     }
 
     @GetMapping("/{userLocalName}/phobias")
@@ -76,5 +77,13 @@ public class UsersController {
             @RequestParam(required = false, defaultValue = "200") int limit
     ) {
         return ResponseEntity.ok(notificationQueryService.listUserNotifications(userLocalName, limit));
+    }
+
+    @PostMapping("/{userLocalName}/phobias")
+    public AddUserPhobiaResponse addUserPhobia(
+            @PathVariable String userLocalName,
+            @RequestBody AddUserPhobiaRequest req
+    ) {
+        return userPhobiaService.addPhobiaToUser(userLocalName, req);
     }
 }

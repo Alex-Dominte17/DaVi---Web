@@ -288,6 +288,32 @@ phoa:AliceAcrophobiaAffliction a phoa:PhobiaAffliction ;
   phoa:severity 5 ;
   phoa:afflictionStart "2025-11-15T00:00:00Z"^^xsd:dateTime .
 
+########################ADDED PHOBIAS##############################
+
+phoa:Hedonophobia a phoa:Phobia ;
+  rdfs:label "Hedonophobia"@en ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q23679966> .
+
+phoa:ECommerceFear a phoa:Phobia ;
+  rdfs:label "E-commerce fear"@en ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q25456248> .
+
+phoa:Spheksophobia a phoa:Phobia ;
+  rdfs:label "Spheksophobia"@en ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q16867852> .
+
+phoa:Eisoptrophobia a phoa:Phobia ;
+  rdfs:label "Eisoptrophobia"@en ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q16884931> .
+
+phoa:Ophidiophobia a phoa:Phobia ;
+  rdfs:label "Ophidiophobia"@en ;
+  skos:exactMatch <http://www.wikidata.org/entity/Q596505> .
+
+###############################################################
+
+
+
 phoa:Claustrophobia a phoa:Phobia ;
   rdfs:label "Claustrophobia"@en ;
   phoa:hasTrigger phoa:SmallEnclosedSpace ;
