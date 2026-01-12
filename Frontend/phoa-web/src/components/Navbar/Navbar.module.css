@@ -1,4 +1,4 @@
-.nav {
+/* .nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -100,4 +100,163 @@
 .getStarted:hover {
   transform: translateY(-1px);
   background-color: #26b9a6;
+} */
+
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  font-family: "Inter", sans-serif;
+}
+
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  z-index: 1001;
+  /* Îi dăm o lățime fixă sau flex-basis ca să nu împingă centrul inegal */
+  flex: 1; 
+}
+
+/* Containerul principal care conține linkurile (centrat) și butoanele (dreapta) */
+.navContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 2; /* Ocupă mai mult spațiu pentru a permite centrarea */
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* Aici se întâmplă magia centrării */
+  margin: 0 auto; 
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1; /* Ocupă spațiu egal cu logo-ul pentru o simetrie perfectă */
+  justify-content: flex-end;
+}
+
+/* --- Restul stilurilor rămân neschimbate pentru elemente --- */
+
+.logoIcon {
+  background-color: #2dd4bf;
+  color: white;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.025em;
+}
+
+.logoText span { color: #2dd4bf; }
+
+.links a {
+  text-decoration: none;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.links a:hover {
+  color: #2dd4bf;
+  background-color: #f0fdfa;
+}
+
+.active {
+  color: #2dd4bf !important;
+  background-color: #f0fdfa;
+  font-weight: 600 !important;
+}
+
+.signIn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.getStarted {
+  background-color: #2dd4bf;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.mobileMenuBtn {
+  display: none;
+  background: none;
+  border: none;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+/* --- RESPONSIVE DESIGN (Ajustat pentru centrarea de mai sus) --- */
+@media (max-width: 1100px) {
+  .nav { padding: 0.75rem 1rem; }
+  .links { gap: 0.2rem; }
+}
+
+@media (max-width: 1024px) {
+  .mobileMenuBtn { display: block; }
+  
+  .navContent {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    flex-direction: column;
+    padding: 2rem;
+    gap: 2rem;
+    display: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .navContent.show { display: flex; }
+
+  .links {
+    flex-direction: column;
+    width: 100%;
+    margin: 0;
+  }
+
+  .authButtons {
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+  }
 }

@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Home.module.css";
 import { ROUTES } from "../../routes/index";
 import { Link } from "react-router-dom";
 import {
-  Search,
   Brain,
   Map,
   Watch,
@@ -11,36 +10,38 @@ import {
   Shield,
   Zap,
   Database,
-  Activity,
   Gamepad2,
-  MapPin,
-  Thermometer,
   Link as LinkIcon,
 } from "lucide-react";
+import { apiService } from "../../api/apiService";
 
 const Home: React.FC = () => {
+  const [phobias, setPhobias] = useState<any[]>([]);
+  const userLocalName = "Alice";
+
+  useEffect(() => {
+    const fetchPhobias = async () => {
+      try {
+        const data = await apiService.getUserPhobias(userLocalName);
+        setPhobias(data);
+      } catch (err) {
+        console.error("Error loading phobias on Home:", err);
+      }
+    };
+    fetchPhobias();
+  }, []);
+
+  const getSeverityClass = (severity: number) => {
+    if (severity >= 7) return styles.severityHigh;
+    if (severity >= 4) return styles.severityMedium;
+    return styles.severityLow;
+  };
+
   return (
     <div className={styles.homeContainer}>
-      <div className={styles.contextHeader}>
-        <div className={styles.contextItem}>
-          <MapPin size={16} className={styles.iconTurq} />
-          <span>Iași, Romania</span>
-        </div>
-        <span className={styles.separator}>•</span>
-        <div className={styles.contextItem}>
-          <Zap size={16} className={styles.iconTurq} />
-          <span>Spring</span>
-        </div>
-        <span className={styles.separator}>•</span>
-        <div className={styles.contextItem}>
-          <Thermometer size={16} className={styles.iconTurq} />
-          <span>18°C</span>
-        </div>
-      </div>
-
       <section className={styles.hero}>
         <h1 className={styles.heroTitle}>
-          Hello, Andrei!
+          Hello!
           <br />
           <span>Your wellness, understood.</span>
         </h1>
@@ -49,67 +50,53 @@ const Home: React.FC = () => {
           <Link to={ROUTES.DASHBOARD} className={styles.btnPrimary}>
             View my dashboard
           </Link>
-          <button className={styles.btnSecondary}>Explore Remedies</button>
         </div>
 
-        <div className={styles.heroTags}>
-          <span className={styles.tagRed}>Pollen: high</span>
-          <span className={styles.tagGray}>High pollen levels detected</span>
-          <span className={styles.tagGray}>Tree blossoming in your area</span>
-        </div>
+        {phobias.length > 0 && (
+          <div className={styles.userPhobias}>
+            <p className={styles.phobiaTitle}>Monitoring {phobias.length} Conditions:</p>
+            <div className={styles.phobiaList}>
+              {phobias.map((p, index) => (
+                <div 
+                  key={index} 
+                  className={`${styles.phobiaBadge} ${getSeverityClass(p.severity)}`}
+                  title={`Severity Level: ${p.severity}/10`}
+                >
+                  <Shield size={14} />
+                  <span className={styles.phobiaLabel}>{p.phobiaLabel}</span>
+                  <span className={styles.severityDot}></span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      <div className={styles.searchSection}>
-        <div className={styles.searchWrapper}>
-          <Search className={styles.searchIcon} size={20} />
-          <input
-            type="text"
-            placeholder="Search phobias, remedies, resources..."
-          />
-          <kbd className={styles.searchKbd}>⌘K</kbd>
-        </div>
-      </div>
-
       <section className={styles.statsSection}>
-        <h2 className={styles.sectionTitle}>Knowledge Base Statistics</h2>
-        <p className={styles.sectionSubtitle}>
-          Real-time data from our semantic knowledge graph
-        </p>
-
         <div className={styles.statsGrid}>
           <StatCard
             icon={<Database />}
-            value="2,847"
             label="Phobias Indexed"
             sub="From Wikidata & DBpedia"
           />
           <StatCard
             icon={<Brain />}
-            value="1,234"
             label="Remedies"
             sub="Exercises & medications"
           />
           <StatCard
             icon={<Gamepad2 />}
-            value="89"
             label="Serious Games"
             sub="Interactive therapy"
           />
           <StatCard
             icon={<LinkIcon />}
-            value="456"
             label="Web Resources"
             sub="Curated external links"
           />
-          <StatCard
-            icon={<Activity />}
-            value="12.4K"
-            label="SPARQL Queries"
-            sub="Processed this month"
-          />
         </div>
         <div className={styles.endpointStatus}>
-          <span>RDF Endpoint Active • Data refreshed 5 minutes ago</span>
+          <span>RDF Endpoint Active • Data refreshed 1 minute ago</span>
         </div>
       </section>
 
@@ -166,20 +153,17 @@ const Home: React.FC = () => {
           Technologies
         </p>
         <p className={styles.techStack}>
-          DBpedia • Wikidata • Schema.org • SPARQL • RDF/JSON-LD
+          DBpedia • Wikidata • Schema.org • RDF/JSON-LD
         </p>
       </footer>
     </div>
   );
 };
 
-const StatCard = ({ icon, value, label, sub }: any) => (
+const StatCard = ({ icon, label, sub }: any) => (
   <div className={styles.statCard}>
     <div className={styles.statIcon}>{icon}</div>
-    <h3>{value}</h3>
-    <p>
-      <strong>{label}</strong>
-    </p>
+    <h3>{label}</h3>
     <span>{sub}</span>
   </div>
 );

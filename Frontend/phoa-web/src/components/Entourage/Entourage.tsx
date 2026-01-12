@@ -1,43 +1,103 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Entourage.module.css";
 import {
   UserPlus,
   Shield,
   Bell,
-  MessageSquare,
-  Check,
-  X,
   Info,
-  Heart,
+  Trash2,
+  Edit,
+  X,
+  Save,
 } from "lucide-react";
+import { apiService } from "../../api/apiService";
+
+interface Contact {
+  name: string;
+  email: string;
+  relationship: string;
+  alertsEnabled: boolean;
+}
 
 const Entourage: React.FC = () => {
-  const contacts = [
-    {
-      id: 1,
-      name: "Maria Popescu",
-      role: "Family",
-      email: "maria@example.com",
-      initials: "MP",
-      alerts: true,
-    },
-    {
-      id: 2,
-      name: "Ion Ionescu",
-      role: "Friend",
-      email: "ion@example.com",
-      initials: "II",
-      alerts: true,
-    },
-    {
-      id: 3,
-      name: "Dr. Ana Medicescu",
-      role: "Professional",
-      email: "ana.med@example.com",
-      initials: "DAM",
-      alerts: false,
-    },
-  ];
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    relationship: "Friend",
+    alertsEnabled: true,
+  });
+
+  const userId = "Alice";
+  const generateContactId = (name: string) => `Contact_${userId}_${name.replace(/\s+/g, '')}`;
+
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getEntourage(userId);
+      setContacts(data);
+    } catch (err) {
+      console.error("Error fetching entourage:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  const handleOpenModal = (contact?: Contact) => {
+    if (contact) {
+      setEditingContact(contact);
+      setFormData({
+        name: contact.name,
+        email: contact.email,
+        relationship: contact.relationship,
+        alertsEnabled: contact.alertsEnabled,
+      });
+    } else {
+      setEditingContact(null);
+      setFormData({ name: "", email: "", relationship: "Friend", alertsEnabled: true });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingContact) {
+        // Generăm ID-ul formatat pentru PATCH: Contact_Alice_Maria
+        const contactId = generateContactId(editingContact.name);
+        
+        // Request body-ul conține: {name, email, relationship, alertsEnabled}
+        await apiService.updateContact(userId, contactId, formData);
+      } else {
+        // Pentru POST folosim direct formData
+        await apiService.addContact(userId, formData);
+      }
+      setIsModalOpen(false);
+      fetchContacts();
+    } catch (err) {
+      alert("Error saving contact. Please try again.");
+    }
+  };
+
+  const handleDelete = async (contactName: string) => {
+    if (!window.confirm(`Are you sure you want to remove ${contactName}?`)) return;
+    try {
+      const contactId = generateContactId(contactName);
+      
+      await apiService.deleteContact(userId, contactId);
+      setContacts(prev => prev.filter(c => c.name !== contactName));
+    } catch (err) {
+      alert("Error deleting contact.");
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -46,7 +106,7 @@ const Entourage: React.FC = () => {
           <h1>Social Entourage</h1>
           <p>Your trusted circle and community insights</p>
         </div>
-        <button className={styles.btnAdd}>
+        <button className={styles.btnAdd} onClick={() => handleOpenModal()}>
           <UserPlus size={18} /> Add Contact
         </button>
       </header>
@@ -65,32 +125,29 @@ const Entourage: React.FC = () => {
             </div>
 
             <div className={styles.contactList}>
-              {contacts.map((contact) => (
-                <div key={contact.id} className={styles.contactItem}>
-                  <div className={styles.avatar}>{contact.initials}</div>
+              {loading ? (
+                <p>Loading your semantic circle...</p>
+              ) : contacts.map((contact, index) => (
+                <div key={index} className={styles.contactItem}>
+                  <div className={styles.avatar}>{contact.name.substring(0, 2).toUpperCase()}</div>
                   <div className={styles.contactInfo}>
                     <div className={styles.nameRow}>
                       <h3>{contact.name}</h3>
-                      <span
-                        className={`${styles.roleBadge} ${
-                          styles[contact.role.toLowerCase()]
-                        }`}
-                      >
-                        {contact.role}
+                      <span className={`${styles.roleBadge} ${styles[contact.relationship.toLowerCase()] || styles.friend}`}>
+                        {contact.relationship}
                       </span>
                     </div>
                     <p>{contact.email}</p>
                   </div>
                   <div className={styles.contactActions}>
-                    <span
-                      className={
-                        contact.alerts ? styles.alertsOn : styles.alertsOff
-                      }
-                    >
-                      <Bell size={14} /> Alerts {contact.alerts ? "On" : "Off"}
+                    <span className={contact.alertsEnabled ? styles.alertsOn : styles.alertsOff}>
+                      <Bell size={14} /> Alerts {contact.alertsEnabled ? "On" : "Off"}
                     </span>
-                    <button className={styles.btnChat}>
-                      <MessageSquare size={18} />
+                    <button className={styles.btnChat} onClick={() => handleOpenModal(contact)}>
+                      <Edit size={18} />
+                    </button>
+                    <button className={styles.btnChat} onClick={() => handleDelete(contact.name)}>
+                      <Trash2 size={18} color="#ef4444" />
                     </button>
                   </div>
                 </div>
@@ -100,59 +157,8 @@ const Entourage: React.FC = () => {
             <div className={styles.semanticNote}>
               <Info size={16} />
               <p>
-                <strong>Semantic Note:</strong> Contacts are modeled using FOAF
-                (Friend of a Friend) ontology for interoperability with other
-                semantic web applications.
+                <strong>Semantic Note:</strong> Contacts are modeled using FOAF (Friend of a Friend) ontology.
               </p>
-            </div>
-          </section>
-          <section className={styles.tipsCard}>
-            <div className={styles.tipsHeader}>
-              <div className={styles.iconBoxTips}>
-                <MessageSquare size={20} color="#f97316" />
-              </div>
-              <div>
-                <h2>Crowdsourced Tips</h2>
-                <span>RDF annotations on resources</span>
-              </div>
-            </div>
-
-            <div className={styles.tipsList}>
-              <div className={styles.tipItem}>
-                <div className={styles.tipUserAvatar}>M</div>
-                <div className={styles.tipContent}>
-                  <div className={styles.tipMeta}>
-                    <strong>Maria P.</strong>{" "}
-                    <span>on "4-7-8 Breathing Technique"</span>
-                  </div>
-                  <p>
-                    The 4-7-8 technique really helped my son during elevator
-                    rides. We practice it together before entering.
-                  </p>
-                  <div className={styles.tipActions}>
-                    <span>1/6/2026</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.tipItem}>
-                <div className={styles.tipUserAvatarGray}>A</div>
-                <div className={styles.tipContent}>
-                  <div className={styles.tipMeta}>
-                    <strong>Anonymous</strong>{" "}
-                    <span>on "4-7-8 Breathing Technique"</span>
-                  </div>
-                  <p>
-                    I found that doing the breathing exercise while looking at a
-                    photo of a safe place helps even more.
-                  </p>
-                  <div className={styles.tipActions}>
-                    <span>1/5/2026</span>
-                  </div>
-                </div>
-              </div>
-
-              <button className={styles.btnAddTip}>Add Your Tip</button>
             </div>
           </section>
         </main>
@@ -160,52 +166,70 @@ const Entourage: React.FC = () => {
         <aside className={styles.sidebar}>
           <section className={styles.sideCard}>
             <div className={styles.sideHeader}>
-              <Bell size={18} color="#2dd4bf" />
-              <h3>Alert Settings</h3>
-            </div>
-            <div className={styles.settingRow}>
-              <div>
-                <h4>Panic Alerts</h4>
-                <p>Notify circle on panic events</p>
-              </div>
-              <div className={`${styles.toggle} ${styles.on}`}></div>
-            </div>
-            <div className={styles.settingRow}>
-              <div>
-                <h4>Location Sharing</h4>
-                <p>Share location during alerts</p>
-              </div>
-              <div className={styles.toggle}></div>
-            </div>
-          </section>
-
-          <section className={styles.sideCard}>
-            <div className={styles.sideHeader}>
               <UserPlus size={18} color="#2dd4bf" />
-              <h3>Pending Invites</h3>
+              <h3>Add to Circle</h3>
             </div>
-            <div className={styles.inviteItem}>
-              <div className={styles.smallAvatar}>A</div>
-              <span className={styles.inviteName}>Alexandru M.</span>
-              <div className={styles.inviteActions}>
-                <Check size={18} className={styles.iconCheck} />
-                <X size={18} className={styles.iconX} />
-              </div>
-            </div>
+            <p className={styles.sideDesc}>Securely add trusted members to receive context-aware alerts.</p>
+            <button className={styles.btnAddTip} onClick={() => handleOpenModal()}>
+               Open Add Form
+            </button>
           </section>
 
           <section className={`${styles.sideCard} ${styles.privacyCard}`}>
             <Shield size={20} color="#3b82f6" />
             <div>
               <h4>Privacy First</h4>
-              <p>
-                Your health data is never shared. Only alerts you configure are
-                sent to your trusted circle.
-              </p>
+              <p>Your health data is never shared. Only configured alerts are sent.</p>
             </div>
           </section>
         </aside>
       </div>
+
+      {isModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.popupTitle}>{editingContact ? "Edit Contact" : "Add New Contact"}</h2>
+              <button className={styles.closeBtn} onClick={() => setIsModalOpen(false)}><X /></button>
+            </div>
+            <form onSubmit={handleSubmit} className={styles.modalForm}>
+              <div className={styles.inputGroup}>
+                <label>Full Name</label>
+                <input 
+                  type="text" required value={formData.name} 
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Email</label>
+                <input 
+                  type="email" required value={formData.email} 
+                  onChange={e => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Relationship</label>
+                <select value={formData.relationship} onChange={e => setFormData({...formData, relationship: e.target.value})}>
+                  <option value="Family">Family</option>
+                  <option value="Friend">Friend</option>
+                  <option value="Professional">Professional</option>
+                </select>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input 
+                  type="checkbox" id="notif-check"
+                  checked={formData.alertsEnabled} 
+                  onChange={e => setFormData({...formData, alertsEnabled: e.target.checked})}
+                />
+                <label htmlFor="notif-check">Enable Panic Alerts</label>
+              </div>
+              <button type="submit" className={styles.btnAdd}>
+                <Save size={18} /> {editingContact ? "Update" : "Create"} Contact
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

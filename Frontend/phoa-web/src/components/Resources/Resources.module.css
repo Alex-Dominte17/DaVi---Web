@@ -39,7 +39,7 @@
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: white;
-  font-size: 1rem;
+  font-size: 15px;
 }
 
 .viewToggle {
@@ -84,7 +84,9 @@
 .activeChip {
   background: #2dd4bf;
   color: white;
-  border-color: #2dd4bf;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 20px;
 }
 
 .statusRow {
@@ -202,4 +204,106 @@
   border-radius: 8px;
   font-size: 0.8rem;
   color: #64748b;
+}
+
+
+.loaderBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px;
+  color: #64748b;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.resourceCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 0px; 
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  border-top: 6px solid #e2e8f0; 
+}
+
+.resourceCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+.uriBox {
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.iriLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: #64748b;
+  word-break: break-all;
+}
+
+.btnVisit {
+  background: #2dd4bf;
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btnVisit:hover {
+  background: #0d9488;
+}
+
+.linkedIcon {
+    font-size: 1rem;
+    opacity: 0.5;
+}
+
+.cardContent {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.borderTurq { border-top-color: #2dd4bf !important; }
+.borderOrange { border-top-color: #fb923c !important; }
+.borderBlue { border-top-color: #38bdf8 !important; }
+.borderGreen { border-top-color: #5dda8b !important; }
+
+.resourceCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }

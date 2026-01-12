@@ -1,0 +1,229 @@
+.container {
+  padding: 2rem 4rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  color: #1e293b;
+  margin: 0;
+  font-weight: 800;
+}
+
+.header p {
+  color: #64748b;
+  margin-top: 4px;
+  font-size: 1.1rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.tabs button {
+  padding: 0.85rem 1.75rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.tabs button:hover {
+  border-color: #2dd4bf;
+  color: #2dd4bf;
+  transform: translateY(-2px);
+}
+
+.tabs button.activeTab {
+  background: #2dd4bf;
+  color: white;
+  border-color: #2dd4bf;
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.25);
+}
+
+.card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 24px;
+  margin-top: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+}
+
+.methodToggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2.5rem;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.methodToggle button {
+  background: none;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.methodToggle button.activeMethod {
+  background: white;
+  color: #1e293b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.gridForm {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.inputGroup input {
+  padding: 0.8rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background-color: #f8fafc;
+  transition: all 0.2s;
+  color: #1e293b;
+}
+
+.inputGroup input:focus {
+  background-color: #ffffff;
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.1);
+  outline: none;
+}
+
+.inputGroup input[readonly] {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.jsonArea {
+  width: 100%;
+  height: 350px;
+  padding: 1.5rem;
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.95rem;
+  border-radius: 16px;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  color: #38bdf8;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.jsonArea:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+}
+
+.submitBtn {
+  margin-top: 2.5rem;
+  width: 100%;
+  padding: 1.1rem;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.submitBtn:hover {
+  background: #334155;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.submitBtn:active {
+  transform: translateY(0);
+}
+
+.status {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  animation: slideUp 0.3s ease-out;
+}
+
+.success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+  .gridForm {
+    grid-template-columns: 1fr;
+  }
+  .container {
+    padding: 1.5rem 2rem;
+  }
+}
