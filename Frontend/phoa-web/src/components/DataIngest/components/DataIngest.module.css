@@ -220,10 +220,88 @@
 }
 
 @media (max-width: 1024px) {
-  .gridForm {
-    grid-template-columns: 1fr;
-  }
   .container {
     padding: 1.5rem 2rem;
+  }
+
+  .gridForm {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+  }
+
+  .header p {
+    font-size: 0.95rem;
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tabs button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .methodToggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .methodToggle button {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+
+  .jsonArea {
+    height: 250px;
+    font-size: 0.85rem;
+    padding: 1rem;
+  }
+
+  .submitBtn {
+    font-size: 0.95rem;
+    padding: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .inputGroup label {
+    font-size: 0.75rem;
+  }
+
+  .inputGroup input {
+    font-size: 0.9rem;
+    padding: 0.7rem;
+  }
+
+  .status {
+    font-size: 0.85rem;
+    padding: 1rem;
   }
 }

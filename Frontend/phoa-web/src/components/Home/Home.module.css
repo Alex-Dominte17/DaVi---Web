@@ -411,6 +411,7 @@
 .severityHigh {
   border-left: 4px solid #ef4444;
 }
+
 .severityHigh .severityDot {
   width: 8px;
   height: 8px;
@@ -421,6 +422,7 @@
 .severityMedium {
   border-left: 4px solid #f59e0b;
 }
+
 .severityMedium .severityDot {
   width: 8px;
   height: 8px;
@@ -431,6 +433,7 @@
 .severityLow {
   border-left: 4px solid #10b981;
 }
+
 .severityLow .severityDot {
   width: 8px;
   height: 8px;
@@ -447,4 +450,93 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .heroTitle span {
+    font-size: 2rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .featuresGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .homeContainer {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+
+  .heroTitle span {
+    font-size: 1.5rem;
+  }
+
+  .heroActions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btnPrimary {
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .featuresMainTitle {
+    font-size: 1.8rem;
+  }
+
+  .statCard {
+    padding: 1.5rem;
+  }
+
+  .featureCard {
+    padding: 1.5rem;
+  }
+
+  .phobiaList {
+    gap: 8px;
+  }
+
+  .phobiaBadge {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .homeContainer {
+    padding: 1rem;
+  }
+
+  .hero {
+    margin-bottom: 2rem;
+  }
+
+  .endpointStatus span {
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+  }
 }
