@@ -211,7 +211,6 @@ public class IngestService {
             throw new IllegalArgumentException("userId and observationId are required");
         }
 
-        // 1) Build triples in a temporary model
         Model tmp = ModelFactory.createDefaultModel();
 
         Resource user = tmp.createResource(PHOA_NS + req.userId);
@@ -219,49 +218,41 @@ public class IngestService {
         Resource obs = tmp.createResource(PHOA_NS + req.observationId);
         obs.addProperty(RDF.type, SOSA_OBS);
 
-        // Link user -> observation
         user.addProperty(PHOA_HAS_OBSERVATION, obs);
 
-        // Sensor (create if not present)
         if (req.sensor != null && !req.sensor.isBlank()) {
             Resource sensor = tmp.createResource(PHOA_NS + req.sensor.trim().replaceAll("\\s+", ""));
             sensor.addProperty(RDF.type, SOSA_SENSOR);
             obs.addProperty(SOSA_MADE_BY, sensor);
         }
 
-        // observedProperty: allow full URI or short name
         if (req.observedProperty != null && !req.observedProperty.isBlank()) {
             String p = req.observedProperty.trim();
             String propUri = p.startsWith("http://") || p.startsWith("https://")
                     ? p
-                    : (SCHEMA_NS + p); // you can later change to PHOA_NS if you want phoa:heartRate etc.
+                    : (PHOA_NS + p);
             obs.addProperty(SOSA_OBS_PROP, tmp.createResource(propUri));
         }
 
-        // value: try numeric, else string
         if (req.value != null && !req.value.isBlank()) {
             Literal valueLit = tryParseNumberLiteral(tmp, req.value.trim());
             obs.addProperty(SOSA_SIMPLE, valueLit);
         }
 
-        // time
         if (req.time != null && !req.time.isBlank()) {
             obs.addProperty(SOSA_TIME, tmp.createTypedLiteral(req.time, XSDDatatype.XSDdateTime));
         }
 
-        // unit (optional)
         if (req.unit != null && !req.unit.isBlank()) {
             obs.addProperty(SCHEMA_UNIT_TEXT, req.unit);
         }
 
-        // 2) SHACL validate the temp model BEFORE writing
         ValidationReport report = shaclValidationService.validate(tmp);
         if (!report.conforms()) {
             String ttl = shaclValidationService.reportAsTurtle(report);
             throw new ShaclValidationException("SHACL validation failed for observation", ttl);
         }
 
-        // 3) Only if valid: add to dataset and commit
         var ds = store.dataset();
         ds.begin(ReadWrite.WRITE);
         try {

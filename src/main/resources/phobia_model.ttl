@@ -81,12 +81,15 @@ phoa:noiseLevelDb a rdf:Property ;
 phoa:fearRating a rdf:Property ;
   rdfs:label "Fear rating (0-10)"@en .
 
+phoa:pleasureAnxietyRating a rdf:Property ;
+  rdfs:label "Pleasure anxiety rating (0–10)"@en .
+
 phoa:addressed a rdf:Property ;
   rdfs:domain phoa:Context ;
   rdfs:range xsd:boolean ;
   rdfs:label "addressed"@en .
 
-phoa:heartRateBpm a sosa:ObservableProperty ;
+phoa:heartRateBpm a rdf:Property ;
   rdfs:label "Heart rate (bpm)"@en .
 
 ### OBJECT PROPERTIES ###
@@ -292,6 +295,8 @@ phoa:AliceAcrophobiaAffliction a phoa:PhobiaAffliction ;
 
 phoa:Hedonophobia a phoa:Phobia ;
   rdfs:label "Hedonophobia"@en ;
+  phoa:hasTrigger phoa:pleasureAnxietyRating ;
+  phoa:recommendedIntervention phoa:PleasureReintegration ;
   skos:exactMatch <http://www.wikidata.org/entity/Q23679966> .
 
 phoa:ECommerceFear a phoa:Phobia ;
@@ -442,6 +447,13 @@ phoa:PollenAllergy a phoa:Allergy ;
   skos:exactMatch <http://www.wikidata.org/entity/Q128581> .
 
 
+#######################hedenophobia for example
+
+phoa:PleasurableActivity a phoa:Trigger ;
+  rdfs:label "Pleasurable activity"@en .
+
+phoa:PositiveEmotion a phoa:Trigger ;
+  rdfs:label "Positive emotion (joy, excitement, pleasure)"@en .
 
 phoa:SmallEnclosedSpace a phoa:Trigger ;
   rdfs:label "Small enclosed space"@en .
@@ -474,6 +486,18 @@ phoa:OfficeElevator a schema:Place ;
   ] .
 
 # Interventions
+
+############################
+# New ExerciseRecommendation
+############################
+
+phoa:PleasureReintegration a phoa:ExerciseRecommendation ;
+  rdfs:label "Pleasure reintegration (values-based micro-activities + reflection)"@en ;
+  phoa:targetsPhobia phoa:Hedonophobia ;
+  phoa:youtubeLink "https://www.youtube.com/watch?v=ZToicYcHIOU"^^xsd:anyURI .
+
+
+
 phoa:BreathingExercise a phoa:ExerciseRecommendation ;
   rdfs:label "Box breathing (4-4-4-4)"@en ;
   phoa:targetsPhobia phoa:Claustrophobia, phoa:Arachnophobia, phoa:Agoraphobia, phoa:Acrophobia ;
@@ -591,6 +615,11 @@ phoa:Obs1 a sosa:Observation ;
   sosa:observedProperty phoa:heartRateBpm ;
   sosa:hasSimpleResult 112 ;
   sosa:resultTime "2026-01-05T09:00:10Z"^^xsd:dateTime .
+
+
+############################
+# Hedonophobia-related observation
+############################
 
 
 ############################

@@ -48,14 +48,22 @@ public class EvaluationService {
         List<String> created = new ArrayList<>();
 
         List<LatestContextResponse> contexts = contextQueryService.listUnaddressedContexts(userId, limit);
+        System.out.println(contexts);
         if (contexts == null || contexts.isEmpty()) return created;
+
+
 
         Long hr       = getLatestLongObservation(userId, "heartRateBpm");
         Long fear     = getLatestLongObservation(userId, "fearRating");
         Long noise    = getLatestLongObservation(userId, "noiseLevelDb");
         Long altitude = getLatestLongObservation(userId, "altitudeMeters");
+        Long pleasureAnxiety = getLatestLongObservation(userId, "pleasureAnxietyRating");
+
+        System.out.println(pleasureAnxiety);
+
 
         List<String> phobias = getUserPhobiaTypes(userId);
+        System.out.println(phobias);
         if (phobias.isEmpty()) return created;
 
         for (var ctxDto : contexts) {
@@ -71,7 +79,7 @@ public class EvaluationService {
                 String phobiaLocal = phobiaUri.substring(phobiaUri.indexOf('#') + 1);
                 if (!matchesContext(phobiaLocal, event, place)) continue;
 
-                double confidence = computeConfidence(phobiaLocal, hr, fear, noise, altitude);
+                double confidence = computeConfidence(phobiaLocal, hr, fear, noise, altitude, pleasureAnxiety);
                 if (confidence > bestConfidence) {
                     bestConfidence = confidence;
                     bestPhobiaLocal = phobiaLocal;
@@ -80,7 +88,7 @@ public class EvaluationService {
 
             List<String> interventions = null;
             String notifUri = null;
-
+            System.out.println(bestPhobiaLocal);
             if (bestPhobiaLocal != null) {
                 interventions = getRecommendedInterventions(bestPhobiaLocal);
 
@@ -223,7 +231,12 @@ public class EvaluationService {
         } finally { ds.end(); }
     }
 
-    private double computeConfidence(String phobiaLocal, Long hr, Long fear, Long noise, Long altitude) {
+    private double computeConfidence(String phobiaLocal,
+                                     Long hr,
+                                     Long fear,
+                                     Long noise,
+                                     Long altitude,
+                                     Long pleasureAnxiety) {
         double c = 0.55;
 
         if (fear != null) {
@@ -237,6 +250,13 @@ public class EvaluationService {
         if ("Agoraphobia".equals(phobiaLocal) && noise != null && noise >= 75) c += 0.10;
         if ("Acrophobia".equals(phobiaLocal) && altitude != null && altitude >= 20) c += 0.10;
 
+        // NEW: Hedonophobia signal from self-report
+        if ("Hedonophobia".equals(phobiaLocal) && pleasureAnxiety != null) {
+            if (pleasureAnxiety >= 8) c += 0.25;
+            else if (pleasureAnxiety >= 6) c += 0.15;
+            else if (pleasureAnxiety >= 4) c += 0.07;
+        }
+        System.out.println(phobiaLocal+"---"+c);
         return Math.min(0.95, c);
     }
 
@@ -266,6 +286,21 @@ public class EvaluationService {
                         || text.contains("attic")
                         || text.contains("storage")
                         || text.contains("shed");
+            case "Hedonophobia":
+                return text.contains("enjoy")
+                        || text.contains("relax")
+                        || text.contains("fun")
+                        || text.contains("pleasure")
+                        || text.contains("treat")
+                        || text.contains("dessert")
+                        || text.contains("party")
+                        || text.contains("celebrat")
+                        || text.contains("vacation")
+                        || text.contains("spa")
+                        || text.contains("date")
+                        || text.contains("cafe")
+                        || text.contains("restaurant");
+
 
             case "Agoraphobia":
                 return text.contains("mall")
