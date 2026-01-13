@@ -6,6 +6,7 @@ local concepts using Linked Open Data (Wikidata + DBpedia). The frontend is a Re
 and surfaces RDF identifiers (IRIs) and external links as first-class UI elements.
 
 ---
+▶️ **YouTube video** (click the thumbnail):
 [![Watch the video](https://img.youtube.com/vi/koNwUeG-iKE/0.jpg)](https://www.youtube.com/watch?v=koNwUeG-iKE&t=2s)
 
 
