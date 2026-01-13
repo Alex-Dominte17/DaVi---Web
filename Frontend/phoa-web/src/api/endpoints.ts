@@ -10,7 +10,7 @@ export const ENDPOINTS = {
       `${API_BASE_URL}/users/${userLocalName}/observations/latest`,
     EVALUATE: (userLocalName: string) => 
       `${API_BASE_URL}/users/${userLocalName}/evaluate`,
-    NOTIFICATIONS: (userLocalName: string, limit: number = 20) => 
+    NOTIFICATIONS: (userLocalName: string, limit: number = 10000) => 
       `${API_BASE_URL}/users/${userLocalName}/notifications?limit=${limit}`,
   },
 

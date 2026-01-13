@@ -38,26 +38,22 @@ const DashboardView: React.FC = () => {
   const userLocalName = "Alice";
 
   useEffect(() => {
+    if (!userLocalName) return; // don't call API with empty user
+  
     const triggerEvaluation = async () => {
       try {
         console.log("Triggering periodic evaluation...");
-        await apiService.evaluateUser(
-          userLocalName,
-          "Periodic background check"
-        );
-
+        await apiService.evaluateUser(userLocalName, "Periodic background check");
         fetchNotifications();
       } catch (err) {
         console.error("Eroare la evaluarea automată:", err);
       }
     };
-
+  
     triggerEvaluation();
-
-    const evaluationInterval = setInterval(triggerEvaluation, 100000);
-
-    return () => clearInterval(evaluationInterval);
-  }, [userLocalName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // still runs once
+  
 
   const fetchNotifications = async () => {
     try {
@@ -75,8 +71,8 @@ const DashboardView: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchDashboardData, 30000);
+    // return () => clearInterval(interval);
   }, [userLocalName]);
 
   const fetchDashboardData = async () => {
