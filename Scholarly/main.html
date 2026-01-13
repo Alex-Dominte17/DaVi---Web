@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phobia-related Web Assistant — Technical Report (Data Models, APIs, RDF Knowledge Model, External Knowledge Sources)</title>
+  <style>
+    :root{
+      --ink:#111;
+      --muted:#444;
+      --bg:#fff;
+      --rule:#ddd;
+      --codebg:#f6f8fa;
+      --accent:#1a4;
+    }
+    html,body{background:var(--bg); color:var(--ink); font-family: ui-serif, Georgia, "Times New Roman", serif; line-height:1.35;}
+    body{max-width: 920px; margin: 0 auto; padding: 28px 18px;}
+    header{border-bottom:2px solid var(--rule); padding-bottom: 14px; margin-bottom: 22px;}
+    h1{font-size: 1.9rem; margin:0 0 6px;}
+    .meta{color:var(--muted); font-size: 0.95rem;}
+    h2{font-size: 1.35rem; margin-top: 28px; padding-top: 8px; border-top:1px solid var(--rule);}
+    h3{font-size: 1.1rem; margin-top: 18px;}
+    p{margin: 10px 0;}
+    ul,ol{margin: 10px 0 10px 22px;}
+    code, pre{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;}
+    pre{background:var(--codebg); border:1px solid var(--rule); border-radius:10px; padding:12px; overflow:auto; font-size:0.92rem;}
+    .callout{border-left: 4px solid var(--accent); background:#f3fff7; padding:10px 12px; border-radius:10px; margin: 12px 0;}
+    table{border-collapse: collapse; width:100%; margin: 10px 0;}
+    th, td{border:1px solid var(--rule); padding:8px; vertical-align: top;}
+    th{background:#fafafa; text-align:left;}
+    .caption{color:var(--muted); font-size:0.92rem; margin-top:6px;}
+    .pagebreak{break-before: page; page-break-before: always;}
+    @media print{
+      body{max-width:none; padding: 0;}
+      header{page-break-after: avoid;}
+      a{color:inherit; text-decoration:none;}
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Phobia-related Web Assistant — Scholarly Technical Report</h1>
+  <div class="meta">
+    <div><strong>Scope:</strong> internal data structures/models; implemented APIs (REST/GraphQL); RDF knowledge model design and reuse; external knowledge sources (Wikidata/DBpedia); SPARQL querying; Linked Data principles.</div>
+    <div><strong>Repository:</strong> Alex-Dominte17/DaVi---Web (backend branch)</div>
+  </div>
+</header>
+
+<section>
+  <h2>Abstract</h2>
+  <p>
+    This report documents the backend of the Phoa Web application with emphasis on (i) internal data structures and
+    models, (ii) the implemented HTTP API and its architectural placement, (iii) the RDF-based knowledge model used
+    for representing domain concepts and user-related facts, and (iv) the pragmatic integration of external Linked Open
+    Data sources such as Wikidata and DBpedia via SPARQL queries. The system adopts Semantic Web standards—RDF for data
+    representation and SPARQL for querying—alongside a conventional web backend stack. Persistent RDF storage is handled
+    through an RDF dataset store (Apache Jena TDB2) and is accessed transactionally using Jena’s transaction patterns.
+    Finally, the solution is evaluated with respect to Linked Data principles, emphasizing URI-based identification,
+    dereferenceability, and interlinking with external datasets.
+  </p>
+</section>
+
+<section>
+  <h2>1. Introduction and System Overview</h2>
+  <p>
+    The Phoa backend is a Java-based web service organized as a Maven project and structured as a typical backend
+    codebase (build descriptor, source tree, and resources). It exposes a set of HTTP endpoints for domain operations
+    such as discovering domain concepts (e.g., phobias), attaching them to users, ingesting user observations and
+    context, and retrieving computed or aggregated information for the frontend.
+  </p>
+
+  <h3>1.1 Architectural context</h3>
+  <p>
+    The backend sits between a web client and two classes of data sources:
+  </p>
+  <ul>
+    <li><strong>Internal persistent store:</strong> an RDF dataset (Jena TDB2) storing both the application’s knowledge model (TBox) and instance data (ABox), including user-specific facts.</li>
+    <li><strong>External knowledge sources:</strong> Wikidata Query Service and DBpedia SPARQL endpoint, queried at runtime to enrich local data and power suggestion/search features.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Note on standards:</strong> RDF provides the data model for describing resources as triples and datasets as graphs; OWL increases expressiveness for ontological constraints/semantics; SPARQL is the standard query language for RDF graphs. RDF and OWL are W3C standards, and SPARQL 1.1 is a W3C Recommendation. (RDF: <a href="https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/">W3C RDF 1.1 Concepts</a>; OWL: <a href="https://www.w3.org/TR/owl-overview/">OWL 2 Overview</a>; SPARQL: <a href="https://www.w3.org/TR/sparql11-query/">SPARQL 1.1 Query Language</a>)
+  </div>
+
+  <h3>1.2 High-level deployment sketch</h3>
+  <figure style="margin:16px 0;">
+    <img
+      src="architecture.png"
+      alt="PHOA system architecture: web client, backend API, RDF store (Jena TDB2), Wikidata and DBpedia"
+      style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px; padding:8px; background:#fff;"
+    />
+    <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+      Figure 1 — High-level PHOA backend architecture with local RDF store (Jena TDB2) and external SPARQL endpoints.
+    </figcaption>
+  </figure>
+  
+  <p class="caption">
+    Figure 1 — Web backend architecture with internal RDF persistence and external SPARQL endpoints.
+  </p>
+</section>
+
+<section class="pagebreak">
+    <h2>2. Internal Data Structures and Models</h2>
+  
+    <p>
+      The backend uses an RDF-first internal data model: core application state is stored as RDF triples inside a
+      transactional dataset (Apache Jena + TDB2). The HTTP layer exchanges JSON DTOs, but the authoritative persistence
+      model is the RDF graph itself. This design makes the schema flexible (new properties/classes can be added without
+      a relational migration) while still enabling strong integrity via SHACL validation during ingestion.
+    </p>
+  
+    <h3>2.1 Persistence substrate: Jena Dataset (TDB2) and transactional access</h3>
+    <p>
+      All reads and writes are executed against a Jena <code>Dataset</code>. Mutations are performed only inside write
+      transactions, and read-only operations are performed inside read transactions (typically through Jena’s
+      <code>Txn</code> helpers). This transactional pattern avoids partial updates and ensures consistent query results
+      under concurrency.
+    </p>
+  
+    <p>
+      On startup, the store component initializes the dataset and loads the ontology Turtle file
+      (<code>phobia_model.ttl</code>) into the default model within a write transaction. This bootstraps both the TBox
+      (classes/properties) and seeded ABox individuals (example phobias, interventions) before the API is used.
+    </p>
+  
+    <h3>2.2 URI strategy and graph organization</h3>
+    <p>
+      The application uses a dedicated namespace for minting local URIs:
+      <code>phoa:</code> = <code>http://example.org/phoa#</code>. Local URIs are minted for users, per-user phobia
+      afflictions, contexts, notifications, and for concept resources that do not yet exist locally.
+    </p>
+  
+    <p>
+      When a local resource corresponds to an external entity (e.g., Wikidata/DBpedia), the model stores explicit links
+      using alignment predicates (notably <code>skos:exactMatch</code>, plus support for <code>owl:sameAs</code> and
+      <code>schema:sameAs</code>). This enables later enrichment and supports Linked Data interlinking.
+    </p>
+  
+    <h3>2.3 Core RDF entities managed by the application</h3>
+  
+    <h4>2.3.1 Users and per-user phobias (reified afflictions)</h4>
+    <p>
+      A central modelling choice is to represent the user–phobia association through a reified node
+      <code>phoa:PhobiaAffliction</code> rather than a single direct link. Concretely:
+    </p>
+    <ul>
+      <li><code>phoa:User</code> → <code>phoa:hasPhobiaAffliction</code> → <code>phoa:PhobiaAffliction</code></li>
+      <li><code>phoa:PhobiaAffliction</code> → <code>phoa:phobiaType</code> → <code>phoa:Phobia</code></li>
+      <li><code>phoa:PhobiaAffliction</code> stores per-user attributes: <code>phoa:afflictionStart</code>,
+          optional <code>phoa:afflictionEnd</code>, and <code>phoa:severity</code> (defaulted to a mid value if missing).</li>
+    </ul>
+  
+    <p>
+      If a phobia concept does not exist locally, the backend creates it on demand by minting a local URI derived from the
+      phobia label (slugified), typing it as <code>phoa:Phobia</code>, adding <code>rdfs:label</code>, and linking it to the
+      provided Wikidata URI using <code>skos:exactMatch</code>. This “local cache + external identity” pattern keeps the
+      local graph self-contained while remaining externally aligned.
+    </p>
+  
+    <h4>2.3.2 Context graph (time, event, place, season, provenance)</h4>
+    <p>
+      Contexts are stored as individuals of <code>phoa:Context</code> attached to a user via <code>phoa:hasContext</code>.
+      Contexts capture situational metadata with optional substructures:
+    </p>
+    <ul>
+      <li><strong>Time:</strong> <code>phoa:contextTime</code> → a Time node holding <code>time:inXSDDateTime</code></li>
+      <li><strong>Event:</strong> <code>phoa:contextEvent</code> → <code>schema:Event</code> (with <code>schema:name</code>)</li>
+      <li><strong>Location:</strong> <code>phoa:contextLocation</code> → <code>schema:Place</code> (with <code>schema:name</code>) and optional <code>schema:geo</code> lat/lon</li>
+      <li><strong>Season:</strong> <code>phoa:contextSeason</code> → <code>phoa:Season</code> (label via <code>rdfs:label</code>)</li>
+      <li><strong>Provenance:</strong> <code>phoa:reportedBy</code> → <code>phoa:DataSource</code> (label via <code>rdfs:label</code>)</li>
+      <li><strong>Workflow:</strong> a boolean flag (e.g., <code>phoa:addressed</code>) is used to track whether a context has been processed.</li>
+    </ul>
+  
+    <h4>2.3.3 Observations (SOSA)</h4>
+    <p>
+      Observations are represented using the SOSA ontology to standardize the representation of measured or reported values.
+      A user links to observations via <code>phoa:hasObservation</code>, and each <code>sosa:Observation</code> records:
+    </p>
+    <ul>
+      <li><code>sosa:observedProperty</code> (URI of the observed feature)</li>
+      <li><code>sosa:hasSimpleResult</code> (literal value)</li>
+      <li><code>sosa:resultTime</code> (xsd:dateTime)</li>
+      <li>optional <code>sosa:madeBySensor</code> and optional <code>schema:unitText</code></li>
+    </ul>
+  
+    <h4>2.3.4 Interventions and recommendations</h4>
+    <p>
+      Interventions are modeled as individuals under classes transitively subclassing <code>phoa:Intervention</code>.
+      The ontology includes specialized intervention categories:
+      <code>phoa:MedicationRecommendation</code>, <code>phoa:ExerciseRecommendation</code>,
+      <code>phoa:SeriousGameRecommendation</code>, and <code>phoa:WebResourceRecommendation</code>.
+      Interventions include labels (<code>rdfs:label</code>) and links (<code>schema:url</code> or <code>phoa:youtubeLink</code>).
+    </p>
+  
+    <p>
+      Phobia concepts can point to suggested interventions via <code>phoa:recommendedIntervention</code>.
+      This allows the backend to retrieve “what to do next” content purely through RDF queries, without hardcoding logic
+      into the application layer.
+    </p>
+  
+    <h4>2.3.5 Notifications</h4>
+    <p>
+      Notifications are stored as <code>phoa:Notification</code> individuals. They may include:
+      <code>phoa:notifiedUser</code>, <code>schema:dateCreated</code>, <code>phoa:confidence</code>,
+      <code>phoa:status</code>, and optional links to <code>phoa:detectedPhobia</code>,
+      <code>phoa:notificationContext</code>, and <code>phoa:deliveredIntervention</code>.
+      Query logic filters read vs unread notifications and can join across linked context and intervention resources.
+    </p>
+  
+    <h4>2.3.6 Entourage contacts (FOAF)</h4>
+    <p>
+      The system stores a user’s support network as FOAF persons. A user links to contacts using
+      <code>phoa:hasEntourageContact</code>, and each <code>foaf:Person</code> can store:
+      <code>foaf:name</code>, <code>foaf:mbox</code>, plus application-level attributes such as
+      <code>phoa:relationship</code> and <code>phoa:alertsEnabled</code>.
+    </p>
+  
+    <h3>2.4 SHACL-based integrity checking at ingestion time</h3>
+    <p>
+      The ingest pipeline constructs RDF statements in a temporary model and validates them using SHACL before committing
+      them to the persistent dataset. If validation fails, ingestion is rejected and an explicit SHACL validation report
+      (serialized as Turtle) is provided. This combines RDF’s schema flexibility with enforceable constraints, ensuring
+      that only conformant graphs become part of the application state.
+    </p>
+  
+    <h3>2.5 Summary: why these internal models matter</h3>
+    <p>
+      Using RDF as the internal data model yields a uniform representation for user profiles, temporal context, sensor-like
+      observations, interventions, and notifications. It also enables rich SPARQL queries (joins across context/event/place,
+      hierarchy traversal for interventions, unread notification retrieval) and provides a natural path to Linked Data
+      integration through explicit external links and standard vocabulary reuse.
+    </p>
+  </section>
+  
+
+  <section class="pagebreak">
+    <h2>3. API Design and Technical Aspects (Implemented REST APIs)</h2>
+  
+    <h3>3.1 Architectural style and representations</h3>
+    <p>
+      The backend exposes a RESTful HTTP API. JSON is used for the public application endpoints (DTO-based request/response
+      payloads). In addition, the implementation provides developer-facing diagnostic endpoints that can output RDF content
+      (notably Turtle) and SHACL validation reports, which is useful for inspecting and validating the live RDF dataset.
+    </p>
+  
+    <h3>3.2 Endpoint overview (controllers and routing)</h3>
+    <p>
+      Endpoints are grouped by responsibility (ingestion, concept discovery/enrichment, interventions, notifications,
+      administration, and debugging). Table 1 summarizes the routes that are directly visible in the provided controller
+      sources.
+    </p>
+  
+    <table>
+      <thead>
+        <tr>
+          <th>Controller</th>
+          <th>Method</th>
+          <th>Path</th>
+          <th>Request DTO</th>
+          <th>Response DTO / type</th>
+          <th>Technical notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IngestController</td>
+          <td>POST</td>
+          <td><code>/api/context</code></td>
+          <td><code>ContextRequest</code></td>
+          <td>JSON map (includes created URI)</td>
+          <td>Creates a <code>phoa:Context</code> subgraph (time/event/place/season/source), validated before commit.</td>
+        </tr>
+  
+        <tr>
+          <td>IngestController</td>
+          <td>POST</td>
+          <td><code>/api/observations</code></td>
+          <td><code>ObservationRequest</code></td>
+          <td>JSON map (includes created URI)</td>
+          <td>Creates a <code>sosa:Observation</code> linked to the user; stores sensor, observedProperty, result, unit, time, source.</td>
+        </tr>
+  
+        <tr>
+          <td>UsersController</td>
+          <td>GET</td>
+          <td><code>/api/users/{userLocalName}/notifications?limit=200</code></td>
+          <td>-</td>
+          <td>List of notification summaries (JSON)</td>
+          <td>Lists notifications for a user; query logic filters out status <code>"read"</code>.</td>
+        </tr>
+  
+        <tr>
+          <td>UsersController</td>
+          <td>POST</td>
+          <td><code>/api/users/{userLocalName}/phobias</code></td>
+          <td><code>AddUserPhobiaRequest</code></td>
+          <td><code>AddUserPhobiaResponse</code></td>
+          <td>
+            Adds a phobia to a user using the reified pattern
+            (<code>phoa:hasPhobiaAffliction</code> → <code>phoa:PhobiaAffliction</code> → <code>phoa:phobiaType</code>).
+            If needed, mints a local <code>phoa:Phobia</code> and links it to Wikidata via <code>skos:exactMatch</code>.
+          </td>
+        </tr>
+  
+        <tr>
+          <td>NotificationsAckController</td>
+          <td>POST</td>
+          <td><code>/api/notifications/{id}/ack</code></td>
+          <td><code>AckRequest</code> (optional)</td>
+          <td>JSON map: <code>{ "id": "...", "status": "read|unread" }</code></td>
+          <td>Acknowledges a notification; defaults to <code>"read"</code> if request body missing/blank; returns 404 if not found.</td>
+        </tr>
+  
+        <tr>
+          <td>EntourageController</td>
+          <td>PATCH</td>
+          <td><code>/api/users/{userId}/entourage/{contactId}</code></td>
+          <td><code>EntourageContactPatchRequest</code></td>
+          <td>JSON map: <code>{ "contactId": "...", "updated": true }</code></td>
+          <td>Partial updates for FOAF-based entourage contacts; returns 404 if not found.</td>
+        </tr>
+  
+        <tr>
+          <td>EntourageController</td>
+          <td>DELETE</td>
+          <td><code>/api/users/{userId}/entourage/{contactId}</code></td>
+          <td>-</td>
+          <td>JSON map: <code>{ "contactId": "...", "deleted": true }</code></td>
+          <td>Deletes an entourage contact; returns 404 if not found.</td>
+        </tr>
+  
+        <tr>
+          <td>InterventionController</td>
+          <td>GET</td>
+          <td><code>/api/interventions</code></td>
+          <td>-</td>
+          <td>List of <code>Intervention</code></td>
+          <td>Lists interventions by querying the RDF store (including class-hierarchy traversal under <code>phoa:Intervention</code>).</td>
+        </tr>
+  
+        <tr>
+          <td>PhobiaSuggestionController</td>
+          <td>GET</td>
+          <td><code>/api/phobias/random?limit=5</code></td>
+          <td>-</td>
+          <td>List of <code>PhobiaSuggestItem</code></td>
+          <td>Returns random phobia suggestions (Wikidata-backed discovery in the service layer).</td>
+        </tr>
+  
+        <tr>
+          <td>PhobiasController</td>
+          <td>GET</td>
+          <td><code>/api/phobias/{phobiaId}/enrich</code></td>
+          <td>-</td>
+          <td><code>PhobiaEnrichmentResponse</code></td>
+          <td>
+            Enriches a local phobia by first reading alignment links from the local RDF graph
+            (<code>skos:exactMatch</code>/<code>owl:sameAs</code>/<code>schema:sameAs</code> etc.), then querying Wikidata/DBpedia.
+          </td>
+        </tr>
+  
+        <tr>
+          <td>AdminController</td>
+          <td>POST</td>
+          <td><code>/api/admin/reset</code></td>
+          <td>Header: <code>X-Admin-Token</code></td>
+          <td>Text</td>
+          <td>Resets the dataset to the initial ontology model; protected by <code>phoa.admin.reset-token</code> (403 if invalid).</td>
+        </tr>
+  
+        <tr>
+          <td>DebugController</td>
+          <td>GET</td>
+          <td><code>/debug/rdf</code></td>
+          <td>-</td>
+          <td><code>text/turtle</code></td>
+          <td>Dumps the default model as Turtle for inspection (developer-facing).</td>
+        </tr>
+  
+        <tr>
+          <td>ShaclDebugController</td>
+          <td>GET</td>
+          <td><code>/debug/shacl</code></td>
+          <td>-</td>
+          <td><code>text/plain</code></td>
+          <td>Runs SHACL validation over the dataset and returns a text report.</td>
+        </tr>
+  
+        <tr>
+          <td>ShaclDebugController</td>
+          <td>GET</td>
+          <td><code>/debug/shacl.ttl</code></td>
+          <td>-</td>
+          <td><code>text/turtle</code></td>
+          <td>SHACL report serialized as Turtle.</td>
+        </tr>
+  
+        <tr>
+          <td>ShaclDebugController</td>
+          <td>GET</td>
+          <td><code>/debug/shacl.json</code></td>
+          <td>-</td>
+          <td><code>application/json</code></td>
+          <td>SHACL report serialized as JSON.</td>
+        </tr>
+  
+        <tr>
+          <td>ShaclDebugController</td>
+          <td>GET</td>
+          <td><code>/debug/shacl/summary</code></td>
+          <td>-</td>
+          <td><code>application/json</code></td>
+          <td>Compact summary: conformance + dataset counts (developer-facing).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="caption">
+      Table 1 — REST endpoints and their primary input/output characteristics (as visible in the provided controllers).
+    </p>
+  
+    <h3>3.3 API contracts (DTO schemas) and example payloads</h3>
+    <p>
+      The API uses explicit DTO classes for request/response payloads, with ISO-8601 strings for date-time fields to ensure
+      interoperable time exchange. DTO fields are kept minimal and map directly to RDF statements during ingestion and
+      command handling.
+    </p>
+  
+    <h4>3.3.1 Context ingestion: <code>POST /api/context</code> (ContextRequest)</h4>
+    <p>
+      The context ingestion endpoint accepts user identification plus optional event/location/time/season/source metadata.
+    </p>
+    <pre><code>{
+    "userId": "Alice",
+    "contextId": "ctx-001",
+    "eventName": "Medical appointment",
+    "placeName": "Bucharest",
+    "lat": 44.4268,
+    "lon": 26.1025,
+    "time": "2026-01-05T09:05:00Z",
+    "season": "Winter",
+    "sourceName": "PhoneGPS"
+  }</code></pre>
+  
+    <h4>3.3.2 Observation ingestion: <code>POST /api/observations</code> (ObservationRequest)</h4>
+    <p>
+      Observations follow a SOSA-aligned pattern and include a sensor identifier, observed property URI (or compact form),
+      a value stored as a literal, optional unit, result time, and an optional source name.
+    </p>
+    <pre><code>{
+    "userId": "Alice",
+    "observationId": "obs-001",
+    "sensor": "AppleWatchHeartRateSensor",
+    "observedProperty": "heartRateBpm",
+    "value": "92",
+    "unit": "bpm",
+    "time": "2026-01-05T09:05:10Z",
+    "sourceName": "AppleWatch"
+  }</code></pre>
+  
+    <h4>3.3.3 Add phobia to user: <code>POST /api/users/{userLocalName}/phobias</code> (AddUserPhobiaRequest)</h4>
+    <p>
+      Adding a phobia requires the external identity and label; severity and afflictionStart are optional per-user fields
+      stored on a <code>phoa:PhobiaAffliction</code> node.
+    </p>
+    <pre><code>{
+    "wikidataUri": "https://www.wikidata.org/entity/Q186892",
+    "label": "Claustrophobia",
+    "severity": 7,
+    "afflictionStart": "2026-01-12T18:30:00Z"
+  }</code></pre>
+  
+    <p>
+      The response (<code>AddUserPhobiaResponse</code>) confirms the minted/used URIs:
+    </p>
+    <pre><code>{
+    "userUri": "http://example.org/phoa#Alice",
+    "phobiaUri": "http://example.org/phoa#Claustrophobia",
+    "wikidataUri": "https://www.wikidata.org/entity/Q186892",
+    "label": "Claustrophobia"
+  }</code></pre>
+  
+    <h4>3.3.4 Notification acknowledgement: <code>POST /api/notifications/{id}/ack</code> (AckRequest)</h4>
+    <p>
+      Acknowledgement supports toggling status; if omitted, the system defaults to <code>"read"</code>.
+    </p>
+    <pre><code>{
+    "status": "read"
+  }</code></pre>
+  
+    <h4>3.3.5 Entourage DTOs (FOAF-based contacts)</h4>
+    <p>
+      The entourage subsystem represents contacts as FOAF persons and uses the following DTOs:
+    </p>
+    <ul>
+      <li><code>EntourageContactRequest</code> for creation: <code>contactId</code> optional (auto-generated if null), <code>name</code> required, plus optional <code>email</code>, <code>relationship</code>, <code>alertsEnabled</code>.</li>
+      <li><code>EntourageContactPatchRequest</code> for partial updates: all fields optional.</li>
+      <li><code>EntourageContactResponse</code> for read-back: includes both <code>contactId</code> and <code>contactUri</code> plus contact fields.</li>
+    </ul>
+  
+    <h4>3.3.6 Enrichment output contract: <code>GET /api/phobias/{phobiaId}/enrich</code> (PhobiaEnrichmentResponse)</h4>
+    <p>
+      Enrichment returns the local phobia URI plus the set of discovered external URIs and best-effort normalized metadata.
+    </p>
+    <pre><code>{
+    "phobiaUri": "http://example.org/phoa#Claustrophobia",
+    "externalUris": [
+      "https://www.wikidata.org/entity/Q186892",
+      "http://dbpedia.org/resource/Claustrophobia"
+    ],
+    "source": "wikidata",
+    "label": "claustrophobia",
+    "description": "fear of confined spaces",
+    "abstractText": " ... ",
+    "wikipediaUrl": "https://en.wikipedia.org/wiki/Claustrophobia"
+  }</code></pre>
+  
+    <h4>3.3.7 Intervention listing output: <code>GET /api/interventions</code> (Intervention)</h4>
+    <p>
+      Interventions are returned in a uniform structure, independent of the intervention subtype.
+    </p>
+    <pre><code>{
+    "iri": "http://example.org/phoa#BreathingExercise",
+    "typeIri": "http://example.org/phoa#ExerciseRecommendation",
+    "label": "Breathing exercise",
+    "url": "https://..."
+  }</code></pre>
+  
+    <h3>3.4 Error handling semantics (GlobalExceptionHandler)</h3>
+    <p>
+      The API defines uniform error payloads using a global exception handler. Two categories are emphasized:
+      semantic validation errors (SHACL) and client-side contract errors (missing/invalid fields).
+    </p>
+  
+    <h4>3.4.1 Semantic validation failures: HTTP 422 (Unprocessable Entity)</h4>
+    <p>
+      When SHACL validation fails, the backend throws a <code>ShaclValidationException</code> and responds with HTTP 422.
+      The response includes both a human-readable message and the SHACL report serialized as Turtle.
+    </p>
+    <pre><code>{
+    "error": "SHACL validation failed: ...",
+    "shaclReportTurtle": "@prefix sh: &lt;http://www.w3.org/ns/shacl#&gt; ..."
+  }</code></pre>
+  
+    <h4>3.4.2 Bad requests: HTTP 400 (Bad Request)</h4>
+    <p>
+      Imperative validation errors (e.g., missing required fields such as label/wikidataUri) are reported as HTTP 400 with a compact
+      JSON object:
+    </p>
+    <pre><code>{
+    "error": "label is required (send it from /phobias/suggest or /phobias/random)"
+  }</code></pre>
+  
+    <h3>3.5 Security and operational considerations</h3>
+    <p>
+      The API includes an explicit administrative reset endpoint protected by an application property
+      (<code>phoa.admin.reset-token</code>) checked against the <code>X-Admin-Token</code> request header. External KB requests
+      are made over HTTP(S) with timeouts, and enrichment is treated as best-effort so that the system can still function
+      with local labels/seed data if external endpoints are slow or unavailable.
+    </p>
+  
+    <h3>3.6 Separation of concerns and maintainability</h3>
+    <p>
+      Controllers remain thin and delegate business logic to service classes. Services encapsulate SPARQL querying, RDF graph
+      mutation, SHACL validation calls, external KB requests, and transaction handling. This separation supports testability
+      and keeps HTTP routing concerns distinct from semantic data management.
+    </p>
+
+    <section class="pagebreak">
+        <h2>3.7 Frontend Integration: SPA Client and Semantic Feature Delivery</h2>
+      
+        <h3>3.7.1 Technology stack and rationale</h3>
+        <p>
+          The PhoA user interface is implemented as a Single Page Application (SPA) using React and TypeScript.
+          TypeScript provides stronger guarantees when handling nested DTO responses originating from RDF-backed queries
+          (e.g., notification summaries enriched with context and interventions). Styling is implemented with CSS Modules
+          to ensure encapsulation and prevent cross-page conflicts. API communication is performed via a dedicated service layer
+          using the Fetch API.
+        </p>
+      
+        <h3>3.7.2 Project structure (client-side modules)</h3>
+        <p>
+          The UI is organized into functional modules aligned with backend capabilities:
+        </p>
+        <ul>
+          <li><code>/src/api</code>: REST client logic (API service + centralized endpoints).</li>
+          <li><code>/src/components</code>: modules (Home, Dashboard, Ingest, Resources, Entourage).</li>
+          <li><code>/src/types</code>: TypeScript interfaces mirroring backend DTOs (e.g., notifications, context, interventions).</li>
+          <li><code>/src/utils</code>: utility logic (e.g., seasonal computation used by the dashboard context bar).</li>
+        </ul>
+      
+        <figure style="margin:16px 0;">
+          <img src="frontend-home.png" alt="PhoA Home screen" style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;">
+          <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+            Figure X — PhoA Home screen and primary navigation structure.
+          </figcaption>
+        </figure>
+      
+        <h3>3.7.3 UI modules mapped to REST endpoints</h3>
+      
+        <h4>Home and user semantic profile</h4>
+        <p>
+          The Home experience exposes the user’s monitored phobias as semantic entities. Each item can link outward to external
+          resources (e.g., Wikidata), reflecting the local-to-external alignment strategy described in the backend sections.
+        </p>
+      
+        <h4>Dashboard: context-aware monitoring, alerts, and recommendations</h4>
+        <p>
+          The Dashboard is the core “semantic feature surface”. It renders:
+        </p>
+        <ul>
+          <li>
+            <strong>Context bar</strong>: latest inferred/ingested context dimensions (season, event, location, timestamp),
+            derived from the backend’s context queries.
+          </li>
+          <li>
+            <strong>Live metrics</strong>: recent observations (e.g., heart rate, altitude, fear level), representing SOSA observations.
+          </li>
+          <li>
+            <strong>Active alerts</strong>: notification summaries and recommended interventions returned by the backend.
+            The “acknowledge” action triggers <code>POST /api/notifications/{id}/ack</code> to persist the “read” state in RDF.
+          </li>
+        </ul>
+      
+        <figure style="margin:16px 0;">
+          <img src="frontend-dashboard.png" alt="PhoA Dashboard with semantic context, alerts, and recommendations" style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;">
+          <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+            Figure Y — Dashboard: semantic context bar, live metrics, and notification-driven recommendations.
+          </figcaption>
+        </figure>
+      
+        <h4>Data ingestion tool: injecting contexts and observations</h4>
+        <p>
+          The Ingest module provides a developer-oriented interface for injecting context and observation data into the RDF store.
+          The UI supports both a structured form and raw JSON entry. IDs and timestamps are generated by default to ensure uniqueness,
+          while remaining editable to support testing and reproducibility. These operations correspond to
+          <code>POST /api/context</code> and <code>POST /api/observations</code>.
+        </p>
+      
+        <figure style="margin:16px 0;">
+          <img src="frontend-ingest.png" alt="PhoA Data Ingestion Tool for contexts and observations" style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;">
+          <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+            Figure Z — Data Ingestion Tool: manual creation of SOSA observations and PHOA contexts.
+          </figcaption>
+        </figure>
+      
+        <h4>Resources and entourage</h4>
+        <p>
+          The Resources page surfaces interventions and curated web links stored in the RDF model. A notable Linked Data feature
+          is that each resource card displays the resource IRI (e.g., <code>http://example.org/phoa#BreathingExercise</code>),
+          providing transparent identifiers that can be cross-referenced in debug RDF dumps and SPARQL queries.
+          The Entourage page manages FOAF-modeled contacts, enabling add/edit/delete operations mapped to the entourage endpoints.
+        </p>
+        <h4>Resources and interventions (RDF-backed library)</h4>
+
+
+        <h4>Dashboard: alerts and recommendations</h4>
+        <p>
+        Notifications returned by the backend are rendered as alert cards. Each alert includes a detected phobia, confidence and time,
+        plus a grid of recommended interventions. The “dismiss” (X) action triggers
+        <code>POST /api/notifications/{id}/ack</code> so the notification becomes <code>read</code> in the RDF store and is removed from the UI.
+        </p>
+
+        <figure style="margin:16px 0;">
+        <img
+            src="ui-alert-recommendations.png"
+            alt="Dashboard alert card with detected phobia, confidence score, and recommended interventions"
+            style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;"
+        />
+        <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+            Figure Y — Alert visualization: semantic detection with confidence score and RDF-backed intervention recommendations.
+        </figcaption>
+        </figure>
+
+        <h4>Social entourage (FOAF-modeled trust circle)</h4>
+        <p>
+        The Entourage module provides CRUD management for the user’s trust circle. UI actions map directly to RDF subjects:
+        creating a contact posts a DTO to <code>POST /api/users/{userId}/entourage</code>, updating uses
+        <code>PATCH /api/users/{userId}/entourage/{contactId}</code>, and deletion calls
+        <code>DELETE /api/users/{userId}/entourage/{contactId}</code>. Contacts are stored as <code>foaf:Person</code> with
+        <code>foaf:name</code> and <code>foaf:mbox</code>, plus application-level attributes such as relationship type and panic-alert enablement.
+        </p>
+
+        <figure style="margin:16px 0;">
+        <img
+            src="ui-entourage-add.png"
+            alt="Add new entourage contact modal"
+            style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;"
+        />
+        <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+            Figure Z1 — Creating a FOAF-modeled entourage contact (name, email, relationship, panic alert flag).
+        </figcaption>
+        </figure>
+
+        <figure style="margin:16px 0;">
+        <img
+            src="ui-entourage-edit.png"
+            alt="Edit entourage contact modal"
+            style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;"
+        />
+        <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+            Figure Z2 — Editing an entourage contact (PATCH semantics reflected in partial updates).
+        </figcaption>
+        </figure>
+        <p>
+            The Resources module exposes interventions stored in the local RDF knowledge base. The UI consumes the
+            <code>GET /api/interventions</code> endpoint and renders each intervention with its label and IRI, making the Linked Data
+            identifier visible and verifiable (e.g., cross-checking the same IRI in RDF dumps or SPARQL queries).
+            Filtering by resource category (exercises, medications, serious games, web resources) corresponds to the intervention
+            type/class in the ontology (subclasses of <code>phoa:Intervention</code>).
+            </p>
+        
+            <figure style="margin:16px 0;">
+            <img
+                src="ui-interventions.png"
+                alt="Resources and interventions list showing RDF IRIs and categories"
+                style="max-width:100%; height:auto; border:1px solid #ddd; border-radius:12px;"
+            />
+            <figcaption style="color:#444; font-size:0.92rem; margin-top:6px;">
+                Figure Z3 — Intervention/resource library: RDF-backed items rendered with IRIs and category filtering.
+            </figcaption>
+            </figure>
+
+        
+
+      
+        <h3>3.7.4 Summary</h3>
+        <p>
+          The frontend acts as a thin semantic client: it consumes REST DTOs produced from SPARQL queries and RDF graphs,
+          and presents Linked Data identifiers and external knowledge links as first-class UI elements. This tight coupling
+          between UI features and RDF-driven backend services demonstrates end-to-end semantic integration.
+        </p>
+      </section>
+      
+  </section>
+  
+  
+
+<section class="pagebreak">
+    <h2>4. RDF Knowledge Model: Design, Reuse, Expressiveness, and Practical Usage</h2>
+
+    <h3>4.1 Knowledge-model scope (TBox vs. ABox)</h3>
+    <p>
+    The RDF knowledge model is stored in Turtle (<code>phobia_model.ttl</code>) and includes both:
+    </p>
+    <ul>
+      <li>
+        <strong>TBox</strong> (schema/ontology): domain classes and properties under the <code>phoa:</code> namespace
+        (<code>http://example.org/phoa#</code>). Core classes include
+        <code>phoa:User</code>, <code>phoa:Phobia</code>, <code>phoa:PhobiaAffliction</code>, <code>phoa:Context</code>,
+        <code>phoa:Notification</code>, <code>phoa:Intervention</code> and its specializations
+        (<code>phoa:MedicationRecommendation</code>, <code>phoa:ExerciseRecommendation</code>,
+        <code>phoa:SeriousGameRecommendation</code>, <code>phoa:WebResourceRecommendation</code>), plus auxiliary concepts such as
+        <code>phoa:Season</code>, <code>phoa:DataSource</code> and <code>phoa:Device</code>.
+      </li>
+      <li>
+        <strong>ABox</strong> (instance data): individuals such as phobia concepts (e.g., <code>phoa:Claustrophobia</code>,
+        <code>phoa:Arachnophobia</code>) and intervention resources (e.g., breathing/grounding exercises, medications and web resources).
+        At runtime, additional individuals are created for users, per-user phobia afflictions, contexts, observations, and notifications.
+      </li>
+    </ul>
+    
+    <h3>4.2 Vocabulary reuse</h3>
+    <p>
+    The model reuses well-known vocabularies to maximize interoperability and reduce ontology “reinvention”:
+    </p>
+    <ul>
+      <li>
+        <strong>Schema.org</strong>: key alignments include <code>phoa:User rdfs:subClassOf schema:Person</code> and
+        <code>phoa:Phobia rdfs:subClassOf schema:MedicalCondition</code>. Intervention specializations also align to Schema.org types
+        (e.g., medication recommendations align with <code>schema:Drug</code>, exercises with <code>schema:ExercisePlan</code>,
+        web resources with <code>schema:WebPage</code>). Locations and events are represented with Schema.org patterns
+        (e.g., <code>schema:Place</code>, <code>schema:Event</code>, <code>schema:name</code>, <code>schema:geo</code>).
+      </li>
+      <li>
+        <strong>W3C Time</strong>: temporal concepts reuse Time ontology patterns; for example <code>phoa:Season</code> is a subclass of
+        <code>time:TemporalEntity</code>, and contexts store timestamps using <code>time:inXSDDateTime</code>.
+      </li>
+      <li>
+        <strong>FOAF</strong>: entourage contacts are represented using <code>foaf:Person</code> with <code>foaf:name</code> and
+        <code>foaf:mbox</code>.
+      </li>
+      <li>
+        <strong>SOSA</strong>: observations are represented using <code>sosa:Observation</code>, enabling a standards-based
+        representation of observed properties, results, sensors, and result times.
+      </li>
+      <li>
+        <strong>RDFS/OWL/SKOS</strong>: labels and taxonomic structure use <code>rdfs:label</code> and <code>rdfs:subClassOf</code>.
+        Linking to external resources is supported via <code>skos:exactMatch</code>, <code>owl:sameAs</code>,
+        <code>schema:sameAs</code>, and the ontology’s annotation property <code>phoa:exactMatch</code> (aligned under
+        <code>skos:exactMatch</code>).
+      </li>
+    </ul>
+    
+    <h3>4.3 Expressiveness and pragmatic reasoning</h3>
+    <p>
+    The ontology is intentionally “pragmatic OWL/RDFS”: it provides a clear class hierarchy, domain concepts, and properties
+    that support query-driven application features without requiring heavyweight inference. A notable modelling choice is the
+    use of <code>phoa:PhobiaAffliction</code> to reify the user–phobia relation. This intermediate node enables per-user attributes
+    such as <code>phoa:severity</code> and temporal boundaries (<code>phoa:afflictionStart</code>, <code>phoa:afflictionEnd</code>),
+    which would be difficult to express if the user were linked directly to a phobia concept with a single triple.
+    </p>
+    
+    <p>
+    Data quality constraints are enforced at runtime via SHACL validation in the ingest pipeline: incoming information is
+    assembled into an RDF model and validated, and nonconformant data is rejected with an explicit validation report.
+    This approach complements the ontology’s structural expressiveness with enforceable integrity constraints.
+    </p>
+    
+    <h3>4.4 Mapping knowledge model to API behaviors</h3>
+    <p>
+    The RDF model is not only documentation; it directly drives the implementation:
+    </p>
+    <ol>
+      <li>
+        <strong>Persistence schema:</strong> application state is persisted as RDF in a transactional dataset (Jena TDB2),
+        storing both ontology seed data and runtime-generated individuals (users, afflictions, contexts, notifications, observations).
+      </li>
+      <li>
+        <strong>Reified user profiling:</strong> adding a phobia to a user creates a <code>phoa:PhobiaAffliction</code> node,
+        attaches start time and severity, and links to a concept node (<code>phoa:phobiaType</code> → <code>phoa:Phobia</code>).
+      </li>
+      <li>
+        <strong>Semantic enrichment and Linked Data integration:</strong> local phobia concepts are linked to external URIs
+        (e.g., Wikidata) using alignment predicates (notably <code>skos:exactMatch</code>), enabling external KB enrichment
+        (labels/descriptions/abstracts) and stronger interlinking in accordance with Linked Data principles.
+      </li>
+    </ol>
+    
+    <section class="pagebreak">
+        <h2>5. Pragmatic Use of External Data/Knowledge Sources (Wikidata, DBpedia) and Non-trivial SPARQL Queries</h2>
+      
+        <p>
+          The backend integrates Linked Open Data sources in a pragmatic way: it keeps a local RDF knowledge base for fast,
+          consistent application behavior, but enriches local resources and powers discovery features by querying public SPARQL
+          endpoints (Wikidata and DBpedia). This combination supports both (i) low-latency local queries for core features and
+          (ii) “open world” enrichment where additional metadata can be obtained on demand.
+        </p>
+      
+        <h3>5.1 External endpoints and integration strategy</h3>
+        <p>
+          Two public knowledge bases are used:
+        </p>
+        <ul>
+          <li>
+            <strong>Wikidata Query Service</strong> (<code>https://query.wikidata.org/sparql</code>) — used primarily for
+            concept discovery/suggestion and for enrichment (labels, English descriptions, Wikipedia articles).
+          </li>
+          <li>
+            <strong>DBpedia SPARQL endpoint</strong> (<code>http://dbpedia.org/sparql</code>) — used primarily for enrichment
+            (English abstracts and links to the corresponding Wikipedia page).
+          </li>
+        </ul>
+      
+        <p>
+          Importantly, the backend does not blindly call external endpoints. Instead, it relies on explicit RDF links stored
+          in the local graph. A local concept resource (e.g., a <code>phoa:Phobia</code> individual) can be linked to external URIs via
+          <code>skos:exactMatch</code>, <code>phoa:exactMatch</code>, <code>owl:sameAs</code> or <code>schema:sameAs</code>. External enrichment
+          then becomes a deterministic step: (1) read external links from the local dataset, (2) query the relevant endpoint(s),
+          (3) return a merged/enriched response.
+        </p>
+      
+        <h3>5.2 Local dataset query: discover external links (alignment predicates)</h3>
+        <p>
+          The enrichment workflow begins by retrieving all external links asserted for a given local resource. The query uses a
+          property path with alternatives, allowing multiple alignment predicates to be supported uniformly.
+        </p>
+        <pre><code>PREFIX skos:   &lt;http://www.w3.org/2004/02/skos/core#&gt;
+      PREFIX owl:    &lt;http://www.w3.org/2002/07/owl#&gt;
+      PREFIX schema: &lt;https://schema.org/&gt;
+      PREFIX phoa:   &lt;http://example.org/phoa#&gt;
+      
+      SELECT DISTINCT ?ext
+      WHERE {
+        &lt;LOCAL_URI&gt; (skos:exactMatch|phoa:exactMatch|owl:sameAs|schema:sameAs) ?ext .
+      }</code></pre>
+      
+        <h3>5.3 DBpedia enrichment query (label, abstract, Wikipedia link)</h3>
+        <p>
+          For DBpedia IRIs, the backend retrieves a compact “profile” that can be shown in the UI: an English label, an English
+          abstract, and the primary topic Wikipedia page when available.
+        </p>
+        <pre><code>PREFIX dbo:  &lt;http://dbpedia.org/ontology/&gt;
+      PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+      PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+      
+      SELECT (SAMPLE(?label) AS ?label)
+             (SAMPLE(?abs)   AS ?abs)
+             (SAMPLE(?wiki)  AS ?wiki)
+      WHERE {
+        VALUES ?s { &lt;DBPEDIA_RESOURCE_URI&gt; }
+      
+        OPTIONAL { ?s rdfs:label ?label FILTER (lang(?label) = "en") }
+        OPTIONAL { ?s dbo:abstract ?abs  FILTER (lang(?abs)  = "en") }
+        OPTIONAL { ?s foaf:isPrimaryTopicOf ?wiki }
+      }</code></pre>
+      
+        <h3>5.4 Wikidata enrichment query (label, English description, Wikipedia article)</h3>
+        <p>
+          For Wikidata entities, the backend retrieves an English label, optional English description, and the English Wikipedia
+          article associated with the entity when available.
+        </p>
+        <pre><code>PREFIX wd:       &lt;http://www.wikidata.org/entity/&gt;
+      PREFIX schema:   &lt;http://schema.org/&gt;
+      PREFIX wikibase: &lt;http://wikiba.se/ontology#&gt;
+      PREFIX bd:       &lt;http://www.bigdata.com/rdf#&gt;
+      PREFIX rdfs:     &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+      
+      SELECT ?label ?desc ?article
+      WHERE {
+        VALUES ?item { wd:QID }
+      
+        SERVICE wikibase:label {
+          bd:serviceParam wikibase:language "en" .
+          ?item rdfs:label ?label .
+        }
+      
+        OPTIONAL {
+          ?item schema:description ?desc .
+          FILTER(LANG(?desc) = "en")
+        }
+      
+        OPTIONAL {
+          ?article schema:about ?item ;
+                   schema:isPartOf &lt;https://en.wikipedia.org/&gt; .
+        }
+      }
+      LIMIT 1</code></pre>
+      
+        <h3>5.5 Wikidata discovery query for phobia suggestions (non-trivial filtering)</h3>
+        <p>
+          The system implements a “phobia suggestion” capability against Wikidata. The query uses a UNION pattern to capture
+          both (i) items in the “phobia” hierarchy and (ii) items that are instances of classes under the “phobia” hierarchy.
+          The service then applies additional semantic checks (e.g., label/description heuristics such as “ends with phobia”
+          or description contains “fear”) to reduce false positives in practice.
+        </p>
+        <pre><code>PREFIX wd:       &lt;http://www.wikidata.org/entity/&gt;
+      PREFIX wdt:      &lt;http://www.wikidata.org/prop/direct/&gt;
+      PREFIX schema:   &lt;http://schema.org/&gt;
+      PREFIX wikibase: &lt;http://wikiba.se/ontology#&gt;
+      PREFIX bd:       &lt;http://www.bigdata.com/rdf#&gt;
+      
+      SELECT ?item ?itemLabel ?desc WHERE {
+        {
+          ?item wdt:P279* wd:Q175854 .                 # subclass-of phobia
+        } UNION {
+          ?item wdt:P31 / wdt:P279* wd:Q175854 .       # instance-of something under phobia
+        }
+      
+        OPTIONAL {
+          ?item schema:description ?desc .
+          FILTER(LANG(?desc) = "en")
+        }
+      
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      }
+      LIMIT N</code></pre>
+      
+        <h3>5.6 Local SPARQL queries supporting application features (examples)</h3>
+        <p>
+          In addition to external endpoint calls, core features are implemented by querying the local dataset. These queries
+          are non-trivial because they join across multiple resources (user → afflictions → phobia → interventions), use OPTIONAL
+          patterns, and extract UI-ready labels and URLs.
+        </p>
+      
+        <h4>5.6.1 Retrieve a user’s phobias with severity and recommended interventions</h4>
+        <pre><code>PREFIX phoa: &lt;http://example.org/phoa#&gt;
+      PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+      
+      SELECT DISTINCT ?phobia ?phobiaLabel ?severity ?intervention ?interventionLabel
+      WHERE {
+        &lt;USER_URI&gt; phoa:hasPhobiaAffliction ?aff .
+        ?aff phoa:phobiaType ?phobia .
+      
+        OPTIONAL { ?aff phoa:severity ?severity . }
+        OPTIONAL { ?phobia rdfs:label ?phobiaLabel . }
+      
+        OPTIONAL {
+          ?phobia phoa:recommendedIntervention ?intervention .
+          OPTIONAL { ?intervention rdfs:label ?interventionLabel . }
+        }
+      }</code></pre>
+      
+        <h3>5.7 Conformance with Linked Data principles (through external linking)</h3>
+        <p>
+          The external KB integration is consistent with Linked Data practices: local resources are assigned stable URIs under a
+          local namespace and are explicitly linked to external HTTP URIs from Wikidata/DBpedia using alignment predicates
+          (<code>skos:exactMatch</code>, <code>owl:sameAs</code>, <code>schema:sameAs</code>). This enables client-side navigation
+          to external sources and allows the backend to dereference and enrich local resources via standard SPARQL-over-HTTP.
+        </p>
+      
+        <h3>5.8 Operational considerations (timeouts, robustness, caching)</h3>
+        <p>
+          Because public SPARQL endpoints can enforce rate limits and may exhibit variable latency, the backend uses HTTP client
+          timeouts for external requests and treats enrichment as best-effort: if an endpoint is unavailable, the system can still
+          rely on local labels and local ontology seed data. In a production-grade deployment, a practical extension would be to cache
+          enrichment responses per external URI (e.g., in-memory or persisted) and to apply circuit-breaker patterns for resilience.
+        </p>
+      </section>
+      
+
+<section class="pagebreak">
+  <h2>6. Conformance to Linked Data Principles</h2>
+  <p>
+    Linked Data principles (often summarized as four rules) recommend using URIs as names for things, using HTTP URIs
+    so they can be looked up, providing useful information when dereferenced, and including links to other URIs for
+    discovery. (W3C summary: <a href="https://www.w3.org/wiki/LinkedData">W3C Linked Data best practices</a>)
+  </p>
+
+  <h3>6.1 How Phoa conforms</h3>
+  <ol>
+    <li><strong>URIs as names for things:</strong> users, observations, and concepts are represented as IRIs in the local namespace.</li>
+    <li><strong>HTTP URIs for lookup:</strong> external entities use HTTP IRIs (e.g., Wikidata entities <code>https://www.wikidata.org/entity/Q...</code>).</li>
+    <li><strong>Useful information on lookup:</strong> the backend exposes APIs that resolve local IRIs to structured JSON; optionally, it can also expose RDF serialization endpoints (<code>text/turtle</code>, <code>application/ld+json</code>).</li>
+    <li><strong>Links to other URIs:</strong> local entities link to Wikidata/DBpedia IRIs; places link to Schema.org terms; time values use Time ontology patterns, enabling graph-level interlinking.</li>
+  </ol>
+
+  <h3>6.2 Recommended improvement: content negotiation</h3>
+  <p>
+    A pragmatic enhancement is to enable content negotiation for selected endpoints:
+  </p>
+  <ul>
+    <li><code>Accept: application/json</code> returns standard API JSON.</li>
+    <li><code>Accept: text/turtle</code> returns RDF Turtle for the same resource.</li>
+    <li><code>Accept: application/ld+json</code> returns JSON-LD for Linked Data clients.</li>
+  </ul>
+  <p>
+    This approach bridges traditional REST clients and Semantic Web agents without duplicating business logic.
+  </p>
+</section>
+
+<section class="pagebreak">
+  <h2>7. Discussion: Strengths, Limitations, and Future Work</h2>
+
+  <h3>7.1 Strengths</h3>
+  <ul>
+    <li><strong>Schema flexibility:</strong> RDF allows evolving the data model without relational migrations.</li>
+    <li><strong>Interoperability:</strong> reuse of Schema.org and external IRIs increases integration potential.</li>
+    <li><strong>Rich querying:</strong> SPARQL supports expressive graph pattern queries and hierarchy traversal.</li>
+    <li><strong>Transactional safety:</strong> TDB2 and Jena Txn patterns provide consistent read/write behavior.</li>
+  </ul>
+
+  <h3>7.2 Limitations</h3>
+  <ul>
+    <li><strong>Endpoint reliability:</strong> external SPARQL services can be rate-limited or unavailable; caching is necessary.</li>
+    <li><strong>Performance hotspots:</strong> complex SPARQL patterns require careful indexing and query shaping.</li>
+    <li><strong>Constraint enforcement:</strong> RDF alone does not enforce cardinalities; SHACL could be introduced later.</li>
+  </ul>
+
+  <h3>7.3 Future work</h3>
+  <ol>
+    <li><strong>SHACL shapes</strong> to validate observation/context payloads and keep ABox consistent.</li>
+    <li><strong>Reasoning layer</strong> for lightweight rule-based alerts (e.g., season + allergy + local flora → warnings).</li>
+    <li><strong>RDF content negotiation</strong> for Linked Data clients and semantic interoperability.</li>
+    <li><strong>Operational hardening</strong>: caches, circuit breakers, query timeouts, and background enrichment jobs.</li>
+  </ol>
+</section>
+
+<section class="pagebreak">
+  <h2>References (Selected)</h2>
+  <ol>
+    <li>W3C. <em>RDF 1.1 Concepts and Abstract Syntax</em>. https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/</li>
+    <li>W3C. <em>SPARQL 1.1 Query Language</em>. https://www.w3.org/TR/sparql11-query/</li>
+    <li>W3C. <em>OWL 2 Web Ontology Language Document Overview</em>. https://www.w3.org/TR/owl-overview/</li>
+    <li>W3C Wiki. <em>Linked Data</em>. https://www.w3.org/wiki/LinkedData</li>
+    <li>Apache Jena. <em>TDB2 Documentation</em>. https://jena.apache.org/documentation/tdb2/</li>
+    <li>Apache Jena. <em>Txn Library (Transactions)</em>. https://jena.apache.org/documentation/txn/txn.html</li>
+    <li>Wikidata. <em>Wikidata:SPARQL query service</em>. https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service</li>
+    <li>DBpedia Association. <em>SPARQL over Online Databases</em>. https://www.dbpedia.org/resources/sparql/</li>
+    <li>Schema.org. <em>Property: geo</em>. https://schema.org/geo</li>
+    <li>Wikidata. <em>Phobia (Q175854)</em>. https://www.wikidata.org/wiki/Q175854</li>
+    <li>Wikidata. <em>Claustrophobia (Q186892)</em>. https://www.wikidata.org/wiki/Q186892</li>
+  </ol>
+</section>
+
+<footer style="margin-top:40px; color:#555; border-top:1px solid #ddd; padding-top:10px;">
+  <p>
+    <strong>Implementation note:</strong> Replace illustrative snippets and paths with exact package names, endpoint paths,
+    class names, and ontology file names taken from your backend branch. Once verified, the “illustrative” labels can be removed.
+  </p>
+</footer>
+</body>
+</html>
