@@ -66,7 +66,7 @@ public class UsersController {
     public ResponseEntity<?> evaluate(@PathVariable String userLocalName,
                                       @RequestBody(required = false) EvaluateRequest req) {
         if (req == null) req = new EvaluateRequest();
-        List<String> notifUris = evaluationService.evaluateUserAllContexts(userLocalName, req, 20);
+        List<String> notifUris = evaluationService.evaluateUserAllContexts(userLocalName, req, 1000);
         if (notifUris.isEmpty()) return ResponseEntity.noContent().build();
         return ResponseEntity.ok(Map.of("notificationUris", notifUris));
     }
@@ -74,7 +74,7 @@ public class UsersController {
     @GetMapping("/{userLocalName}/notifications")
     public ResponseEntity<?> listNotifications(
             @PathVariable String userLocalName,
-            @RequestParam(required = false, defaultValue = "200") int limit
+            @RequestParam(required = false, defaultValue = "1000") int limit
     ) {
         return ResponseEntity.ok(notificationQueryService.listUserNotifications(userLocalName, limit));
     }

@@ -13,11 +13,14 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class EvaluationService {
+    private final EmailService emailService;
+
 
     private static final String PHOA   = "http://example.org/phoa#";
     private static final String SCHEMA = "https://schema.org/";
@@ -39,19 +42,45 @@ public class EvaluationService {
     private final RdfStore store;
     private final ContextQueryService contextQueryService;
 
-    public EvaluationService(RdfStore store, ContextQueryService contextQueryService) {
+    public EvaluationService(RdfStore store, ContextQueryService contextQueryService,EmailService emailService) {
         this.store = store;
         this.contextQueryService = contextQueryService;
+        this.emailService = emailService;
     }
+
+    private List<String> getAlertEmailsByUserPrefix(Model m, String userLocalName) {
+        String prefix = PHOA + "Contact_" + userLocalName + "_";
+
+        String sparql = """
+        PREFIX phoa: <http://example.org/phoa#>
+        PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+        SELECT ?mbox WHERE {
+          ?c phoa:alertsEnabled true ;
+             foaf:mbox ?mbox .
+          FILTER( STRSTARTS(STR(?c), "%s") )
+        }
+    """.formatted(prefix);
+
+        List<String> emails = new ArrayList<>();
+        try (QueryExecution qexec = QueryExecutionFactory.create(sparql, m)) {
+            ResultSet rs = qexec.execSelect();
+            while (rs.hasNext()) {
+                String mbox = rs.nextSolution().get("mbox").toString(); // "mailto:..."
+                String email = mbox.startsWith("mailto:") ? mbox.substring("mailto:".length()) : mbox;
+                emails.add(email);
+            }
+        }
+        return emails;
+    }
+
+
+
 
     public List<String> evaluateUserAllContexts(String userId, EvaluateRequest req, int limit) {
         List<String> created = new ArrayList<>();
 
         List<LatestContextResponse> contexts = contextQueryService.listUnaddressedContexts(userId, limit);
-        System.out.println(contexts);
         if (contexts == null || contexts.isEmpty()) return created;
-
-
 
         Long hr       = getLatestLongObservation(userId, "heartRateBpm");
         Long fear     = getLatestLongObservation(userId, "fearRating");
@@ -59,12 +88,8 @@ public class EvaluationService {
         Long altitude = getLatestLongObservation(userId, "altitudeMeters");
         Long pleasureAnxiety = getLatestLongObservation(userId, "pleasureAnxietyRating");
 
-        System.out.println(pleasureAnxiety);
-
-
         List<String> phobias = getUserPhobiaTypes(userId);
-        System.out.println(phobias);
-        if (phobias.isEmpty()) return created;
+        if (phobias == null || phobias.isEmpty()) return created;
 
         for (var ctxDto : contexts) {
             if (ctxDto == null || ctxDto.contextUri == null) continue;
@@ -86,16 +111,10 @@ public class EvaluationService {
                 }
             }
 
-            List<String> interventions = null;
-            String notifUri = null;
-            System.out.println(bestPhobiaLocal);
-            if (bestPhobiaLocal != null) {
-                interventions = getRecommendedInterventions(bestPhobiaLocal);
-
-                String notifId = "Notif_" + Instant.now().toString().replaceAll("[:\\.Z-]", "") + "_" +
-                        UUID.randomUUID().toString().substring(0, 8);
-                notifUri = PHOA + notifId;
-            }
+            // We'll prepare email data here, send AFTER commit/end
+            List<String> emailRecipients = Collections.emptyList();
+            String emailSubject = null;
+            String emailBody = null;
 
             Dataset ds = store.dataset();
             ds.begin(ReadWrite.WRITE);
@@ -103,10 +122,35 @@ public class EvaluationService {
                 Model m = ds.getDefaultModel();
                 Resource ctx = m.createResource(ctxDto.contextUri);
 
+                // Guard 1: already addressed?
+                Statement addressedStmt = ctx.getProperty(PHOA_CONTEXT_ADDRESSED);
+                if (addressedStmt != null
+                        && addressedStmt.getObject().isLiteral()
+                        && addressedStmt.getObject().asLiteral().getBoolean()) {
+                    ds.commit();
+                    continue;
+                }
+
+                // Guard 2: notif already exists for this context?
+                boolean notifExists = m.listResourcesWithProperty(PHOA_NOTIFICATION_CONTEXT, ctx).hasNext();
+                if (notifExists) {
+                    ctx.removeAll(PHOA_CONTEXT_ADDRESSED);
+                    ctx.addLiteral(PHOA_CONTEXT_ADDRESSED, true);
+                    ds.commit();
+                    continue;
+                }
+
+                // Mark addressed
                 ctx.removeAll(PHOA_CONTEXT_ADDRESSED);
                 ctx.addLiteral(PHOA_CONTEXT_ADDRESSED, true);
 
                 if (bestPhobiaLocal != null) {
+                    List<String> interventions = getRecommendedInterventions(m, bestPhobiaLocal);
+
+                    String notifId = "Notif_" + Instant.now().toString().replaceAll("[:\\.Z-]", "") + "_"
+                            + UUID.randomUUID().toString().substring(0, 8);
+                    String notifUri = PHOA + notifId;
+
                     Resource notif = m.createResource(notifUri);
                     Resource user  = m.createResource(PHOA + userId);
 
@@ -123,6 +167,25 @@ public class EvaluationService {
                     }
 
                     created.add(notifUri);
+
+                    // Prepare email recipients + message (fast RDF read, still inside tx)
+                    emailRecipients = getAlertEmailsByUserPrefix(m, userId); // userId must be "Alice" style local name
+
+                    if (!emailRecipients.isEmpty()) {
+                        emailSubject = "PHOA alert for " + userId + ": " + bestPhobiaLocal;
+
+                        String ev = (ctxDto.eventName == null ? "-" : ctxDto.eventName);
+                        String pl = (ctxDto.placeName == null ? "-" : ctxDto.placeName);
+
+                        emailBody =
+                                "A new PHOA notification was created.\n\n" +
+                                        "User: " + userId + "\n" +
+                                        "Context: " + ev + " / " + pl + "\n" +
+                                        "Detected phobia: " + bestPhobiaLocal + "\n" +
+                                        "Confidence: " + bestConfidence + "\n" +
+                                        "Recommended interventions: " + (interventions == null ? "-" : String.join(", ", interventions)) + "\n" +
+                                        "Notification URI: " + notifUri + "\n";
+                    }
                 }
 
                 ds.commit();
@@ -131,6 +194,18 @@ public class EvaluationService {
                 throw e;
             } finally {
                 ds.end();
+            }
+
+            // Send emails AFTER transaction commit/end
+            if (emailSubject != null && emailBody != null && emailRecipients != null && !emailRecipients.isEmpty()) {
+                for (String to : emailRecipients) {
+                    try {
+                        emailService.sendAsync(to, emailSubject, emailBody);
+                    } catch (Exception mailEx) {
+                        // Don't fail the whole request because one email fails
+                        System.err.println("Failed to send email to " + to + ": " + mailEx.getMessage());
+                    }
+                }
             }
         }
 
@@ -189,27 +264,26 @@ public class EvaluationService {
         }
     }
 
-    private List<String> getRecommendedInterventions(String phobiaLocalName) {
+    private List<String> getRecommendedInterventions(Model m, String phobiaLocalName) {
         String sparql = """
-            PREFIX phoa: <http://example.org/phoa#>
-            SELECT ?i WHERE {
-              phoa:%s phoa:recommendedIntervention ?i .
-            }
-        """.formatted(phobiaLocalName);
+        PREFIX phoa: <http://example.org/phoa#>
+        SELECT ?i WHERE {
+          phoa:%s phoa:recommendedIntervention ?i .
+        }
+    """.formatted(phobiaLocalName);
 
-        Dataset ds = store.dataset();
-        ds.begin(ReadWrite.READ);
-        try (QueryExecution qexec = QueryExecutionFactory.create(sparql, ds)) {
+        List<String> out = new ArrayList<>();
+
+        // Use the model (no begin/end here)
+        try (QueryExecution qexec = QueryExecutionFactory.create(sparql, m)) {
             ResultSet rs = qexec.execSelect();
-            List<String> out = new ArrayList<>();
             while (rs.hasNext()) {
                 QuerySolution row = rs.nextSolution();
                 out.add(row.get("i").toString());
             }
-            return out;
-        } finally {
-            ds.end();
         }
+
+        return out;
     }
 
     private List<String> getUserPhobiaTypes(String userId) {
