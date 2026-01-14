@@ -1,4 +1,4 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'https://davi-web.onrender.com/api';
 
 export const ENDPOINTS = {
   USERS: {
