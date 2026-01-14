@@ -34,3 +34,5 @@ build/
 
 data/tdb2/
 data/**/tdb.lock
+
+src/main/resources/application.properties
